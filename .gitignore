@@ -1,0 +1,21 @@
+*.pyc
+bin/
+include/
+lib/
+
+# sqlite3 db
+*.db
+*.sqlite3
+
+# sublime stuff
+*.sublime-workspace
+
+# Virtual env
+venv/
+
+# Mac crap
+*.DS_Store
+
+# Other crap
+tor_dir_test/
+tor_dir_live/

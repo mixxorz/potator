@@ -1,0 +1,4 @@
+Parsley==1.2
+Twisted==14.0.2
+txsocksx==1.13.0.3
+zope.interface==4.1.1

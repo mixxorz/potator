@@ -1,0 +1,24 @@
+{
+	"folders":
+	[
+		{
+			"path": ".",
+            "folder_exclude_patterns":
+                [
+                    "venv"
+                ],
+            "file_exclude_patterns":
+                [
+                    "*.gitignore",
+                    "*.gitattributes",
+                    "*.sublime-project",
+                    "*.sublime-workspace",
+                    "*.db"
+                ]
+		}
+	],
+  "settings":
+  {
+    "python_interpreter": "~/.virtualenvs/potator/Scripts/python.exe"
+  }
+}
