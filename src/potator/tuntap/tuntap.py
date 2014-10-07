@@ -27,8 +27,7 @@ class TunInterface(object):
         self.transmitter.transmit(data)
 
     def packetReceived(self, packet):
-        print 'Packet received'
-        # raise NotImplementedError()
+        raise NotImplementedError()
 
 #============================ defines =========================================
 
