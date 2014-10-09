@@ -1,5 +1,4 @@
 from collections import deque
-from threading import Lock
 
 from potator.util import settings
 from twisted.internet.endpoints import TCP4ClientEndpoint
@@ -36,7 +35,6 @@ class NodeFactory(Factory):
 class Server(object):
 
     def __init__(self, reactor):
-        self.lock = Lock()
 
         self.endpoint = TCP4ClientEndpoint(
             reactor, '127.0.0.1', settings.SOCKS_PORT)
@@ -59,7 +57,8 @@ class Server(object):
 
     def sendSpore(self, destination_onion_url, spore_string):
         protocol = next(
-            (x[1] for x in self.factory.nodes if x[0] == destination_onion_url),
+            (x[1]
+             for x in self.factory.nodes if x[0] == destination_onion_url),
             None
         )
 
