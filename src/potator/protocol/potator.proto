@@ -1,0 +1,37 @@
+package potator;
+
+message OurpData {
+    enum OurpType {
+        REQUEST = 0;
+        REPLY = 1;
+        GREETING = 2;
+        GREETING_ACK = 3;
+    }
+
+    required OurpType type = 1;
+    required string ipAddress = 2;
+    optional string onionUrl = 3;
+}
+
+message IpData {
+    required string destinationAddress = 1;
+    required bytes data = 2;
+}
+
+message Spore {
+    enum DataType {
+        IP = 0;
+        OURP = 1;
+    }
+
+    enum CastType {
+        UNICAST = 0;
+        BROADCAST = 1;
+    }
+
+    optional string hash = 1;
+    required DataType dataType = 2;
+    required CastType castType = 3;
+    optional OurpData ourpData = 4;
+    optional IpData ipData = 5;
+}
