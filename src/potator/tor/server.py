@@ -1,6 +1,7 @@
 from collections import deque
+from threading import Lock
 
-from .util import settings
+from potator.util import settings
 from twisted.internet.endpoints import TCP4ClientEndpoint
 from twisted.internet.protocol import Factory
 from twisted.protocols.basic import NetstringReceiver
@@ -35,6 +36,8 @@ class NodeFactory(Factory):
 class Server(object):
 
     def __init__(self, reactor):
+        self.lock = Lock()
+
         self.endpoint = TCP4ClientEndpoint(
             reactor, '127.0.0.1', settings.SOCKS_PORT)
 
@@ -54,8 +57,23 @@ class Server(object):
     def connectionFailure(self, err):
         return err
 
-    def sendSpore(self, protocol, spore_string):
-        protocol.sendString(spore_string)
+    def sendSpore(self, destination_onion_url, spore_string):
+        protocol = next(
+            (x[1] for x in self.factory.nodes if x[0] == destination_onion_url),
+            None
+        )
+
+        # If it's found, just use that
+        if protocol:
+            protocol.sendString(spore_string)
+        # If not, make a connection
+        else:
+            d = self.connectTorSocks(destination_onion_url, self.factory)
+            d.addCallback(
+                self.registerNode, self.factory, destination_onion_url)
+            d.addCallback(self.sendSpore, spore_string)
+            d.addErrback(self.print_err)
+
         return protocol
 
     def registerNode(self, protocol, factory, onion_url):
