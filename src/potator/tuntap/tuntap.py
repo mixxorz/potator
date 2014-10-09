@@ -7,24 +7,30 @@ import win32event
 import win32file
 from impacket import ImpactDecoder
 
+from potator.util import settings
+
 
 class TunInterface(object):
 
     def __init__(self):
         self.tuntap = openTunTap()
 
-        self.transmitter = Transmitter(self.tuntap)
+        # self.transmitter = Transmitter(self.tuntap)
         self.readThread = ReadThread(self.tuntap, self)
+        self.writeThread = WriteThread(self.tuntap, self)
 
     def start(self):
         self.readThread.start()
+        self.writeThread.start()
 
     def stop(self):
         self.readThread.close()
+        self.writeThread.close()
         win32file.CloseHandle(self.tuntap)
 
-    def write(self, data):
-        self.transmitter.transmit(data)
+    def write(self, packet):
+        pass
+        # self.transmitter.transmit(packet.get_packet())
 
     def packetReceived(self, packet):
         raise NotImplementedError()
@@ -34,7 +40,10 @@ class TunInterface(object):
 # IPv4 configuration of your TUN interface (represented as a list of integers)
 # < The IPv4 address of the TUN interface.
 
-TUN_IPv4_ADDRESS = [4, 4, 4, 2]
+if settings.IP_ADDRESS:
+    TUN_IPv4_ADDRESS = [int(x) for x in settings.IP_ADDRESS.split('.')]
+else:
+    TUN_IPv4_ADDRESS = [4, 4, 4, 2]
 
 # < The IPv4 address of the TUN interface's network.
 TUN_IPv4_NETWORK = [4,  0, 0, 0]
@@ -228,6 +237,51 @@ class Transmitter(object):
         self.goOn = True
         self.overlappedTx = pywintypes.OVERLAPPED()
         self.overlappedTx.hEvent = win32event.CreateEvent(None, 0, 0, None)
+
+    def transmit(self, dataToTransmit):
+
+        # write over tuntap interface
+        win32file.WriteFile(self.tuntap, dataToTransmit, self.overlappedTx)
+        win32event.WaitForSingleObject(
+            self.overlappedTx.hEvent, win32event.INFINITE)
+        self.overlappedTx.Offset = self.overlappedTx.Offset + \
+            len(dataToTransmit)
+
+
+class WriteThread(threading.Thread):
+
+    '''
+    \brief Thread with periodically sends IPv4 and IPv6 echo requests.
+    '''
+
+    def __init__(self, tuntap, interface):
+
+        # store params
+        self.tuntap = tuntap
+        self.interface = interface
+
+        # local variables
+        self.goOn = True
+        self.overlappedTx = pywintypes.OVERLAPPED()
+        self.overlappedTx.hEvent = win32event.CreateEvent(None, 0, 0, None)
+
+        # initialize parent
+        threading.Thread.__init__(self)
+
+        # give this thread a name
+        self.name = 'writeThread'
+
+    def run(self):
+
+        while self.goOn:
+            if self.interface.send_buffer:
+                # Receive packet from packet handler
+                p = self.interface.send_buffer.popleft()
+                # Write to tuntap (transmit)
+                self.transmit(p.get_packet())
+
+    def close(self):
+        self.goOn = False
 
     def transmit(self, dataToTransmit):
 
