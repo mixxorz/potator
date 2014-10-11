@@ -5,6 +5,7 @@ from threading import Lock
 from impacket import ImpactDecoder
 from twisted.internet import reactor, threads
 
+from .view import CommandInput
 from .database import Database
 from .stats import StatPrinter
 from protocol.potator_pb2 import Spore
@@ -75,8 +76,10 @@ def main():
     server = Server(reactor)
     interface = LocalInterface()
     interface.start()
-    stats = StatPrinter(server, interface)
-    stats.start()
+    # stats = StatPrinter(server, interface)
+    # stats.start()
+    cmd = CommandInput()
+    cmd.start()
 
     # To Tor thread
     threads.deferToThread(sending_loop, server, interface)
