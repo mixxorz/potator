@@ -1,14 +1,18 @@
 import sys
 from collections import deque
+from threading import Lock
 
-from twisted.internet import reactor, threads
 from impacket import ImpactDecoder
+from twisted.internet import reactor, threads
 
+from .database import Database
+from .stats import StatPrinter
+from protocol.potator_pb2 import Spore
 from tor.server import Server
 from tuntap.tuntap import TunInterface
-from protocol.potator_pb2 import Spore
-from .util import settings
-from .stats import StatPrinter
+
+
+_DAO = None
 
 
 class LocalInterface(TunInterface):
@@ -41,7 +45,12 @@ def sending_loop(server, interface):
                 spore.ipData.destinationAddress = packet.get_ip_dst()
                 spore.ipData.data = packet.get_packet()
 
-                destination_onion_url = settings.DESTINATION
+                # TODO: Group number must not be static
+                # TODO: Consider in memory database for better performance
+                destination_onion_url = _DAO.getOnionURL(
+                    packet.get_ip_dst(),
+                    1
+                )
 
                 server.sendSpore(
                     destination_onion_url, spore.SerializeToString())
@@ -60,6 +69,9 @@ def receiving_loop(server, interface):
 
 
 def main():
+    global _DAO
+    _DAO = Database(Lock())
+
     server = Server(reactor)
     interface = LocalInterface()
     interface.start()
