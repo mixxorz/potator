@@ -8,11 +8,14 @@ from tor.server import Server
 from tuntap.tuntap import TunInterface
 from protocol.potator_pb2 import Spore
 from .util import settings
+from .stats import StatPrinter
 
 
 class LocalInterface(TunInterface):
 
     def __init__(self):
+        self.sent_bytes = 0
+        self.received_bytes = 0
         self.receive_buffer = deque()
         self.send_buffer = deque()
         TunInterface.__init__(self)
@@ -30,6 +33,8 @@ def sending_loop(server, interface):
             packet = interface.receive_buffer.popleft()
 
             if '4.4.4' in packet.get_ip_dst():
+                interface.sent_bytes += packet.get_size()
+
                 spore = Spore()
                 spore.dataType = spore.IP
                 spore.castType = spore.UNICAST
@@ -58,6 +63,8 @@ def main():
     server = Server(reactor)
     interface = LocalInterface()
     interface.start()
+    stats = StatPrinter(server, interface)
+    stats.start()
 
     # To Tor thread
     threads.deferToThread(sending_loop, server, interface)

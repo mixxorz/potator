@@ -277,6 +277,7 @@ class WriteThread(threading.Thread):
             if self.interface.send_buffer:
                 # Receive packet from packet handler
                 p = self.interface.send_buffer.popleft()
+                self.interface.received_bytes += p.get_size()
                 # Write to tuntap (transmit)
                 self.transmit(p.get_packet())
 
