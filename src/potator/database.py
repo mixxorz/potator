@@ -53,7 +53,7 @@ class Database(object):
     def setOnionURL(self, ip_address, onion_url, group_id):
         ''' Add a new row to the onion IP database
         '''
-
+        # TODO: Make sure the Onion URL + group_id is unique
         self.lock.acquire()
         try:
             con = self.connect()
