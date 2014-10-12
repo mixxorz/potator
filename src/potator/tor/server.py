@@ -1,5 +1,6 @@
 from collections import deque
 
+from twisted.internet import defer
 from twisted.internet.endpoints import TCP4ClientEndpoint
 from twisted.internet.protocol import Factory
 from twisted.protocols.basic import NetstringReceiver
@@ -37,9 +38,7 @@ class NodeFactory(Factory):
 class Server(object):
 
     def __init__(self, reactor):
-
-        self.endpoint = TCP4ClientEndpoint(
-            reactor, '127.0.0.1', settings.SOCKS_PORT)
+        self.reactor = reactor
 
         self.receive_buffer = deque()
         self.send_buffer = deque()
@@ -48,43 +47,53 @@ class Server(object):
         self.factory = NodeFactory(self)
 
         # Starts the listening server
-        reactor.listenTCP(settings.SERVER_PORT, self.factory)
+        self.reactor.listenTCP(settings.SERVER_PORT, self.factory)
 
-    def connectionFailure(self, err):
-        return err
+    def sendSpore(self, onion_url, spore):
 
-    def sendSpore(self, destination_onion_url, spore_string):
+        d = self.getProtocol(onion_url)
+        d.addCallback(self.send, spore)
+
+    def send(self, protocol, data):
+        protocol.sendString(data)
+
+    def getProtocol(self, onion_url):
         protocol = next(
             (x[1]
-             for x in self.factory.nodes if x[0] == destination_onion_url),
+             for x in self.factory.nodes if x[0] == onion_url),
             None
         )
 
         # If it's found, just use that
         if protocol:
-            protocol.sendString(spore_string)
+            # Pass to next callback
+            d = defer.Deferred()
+            d.callback(protocol)
+            return d
         # If not, make a connection
         else:
-            d = self.connectTorSocks(destination_onion_url, self.factory)
-            d.addCallback(
-                self.registerNode, self.factory, destination_onion_url)
-            d.addCallback(self.sendSpore, spore_string)
+            d = self.connectTorSocks(onion_url)
+            d.addCallback(self.registerNode, onion_url)
+            return d
 
-        return protocol
+    def ignore_error(self, err):
+        pass
 
-    def registerNode(self, protocol, factory, onion_url):
+    def registerNode(self, protocol, onion_url):
         log.msg('Register %s' % onion_url)
-        factory.nodes.append((onion_url, protocol,))
+        self.factory.nodes.append((onion_url, protocol,))
         return protocol
 
-    def connectTorSocks(self, host, factory):
+    def connectTorSocks(self, host):
         # Host must be str, not unicode
         if type(host) == unicode:
             host = host.encode('utf-8')
 
-        endpoint = SOCKS5ClientEndpoint(
-            host, settings.HIDDEN_SERVICE_PORT, self.endpoint)
+        tcp_endpoint = TCP4ClientEndpoint(
+            self.reactor, '127.0.0.1', settings.SOCKS_PORT)
 
-        d = endpoint.connect(factory)
-        d.addErrback(self.connectionFailure)
+        endpoint = SOCKS5ClientEndpoint(
+            host, settings.HIDDEN_SERVICE_PORT, tcp_endpoint)
+
+        d = endpoint.connect(self.factory)
         return d
