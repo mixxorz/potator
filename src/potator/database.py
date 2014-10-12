@@ -1,6 +1,8 @@
 import os
 import sqlite3 as lite
 
+from twisted.python import log
+
 
 class Database(object):
 
@@ -45,9 +47,8 @@ class Database(object):
         try:
             return rows[0][0]
         except IndexError:
+            log.msg('Unknown IP address: %s' % ip_address)
             return None
-
-    # insert row into onion ip database
 
     def setOnionURL(self, ip_address, onion_url, group_id):
         ''' Add a new row to the onion IP database
