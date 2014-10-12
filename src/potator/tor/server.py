@@ -1,5 +1,3 @@
-from collections import deque
-
 from twisted.internet import defer
 from twisted.internet.endpoints import TCP4ClientEndpoint
 from twisted.internet.protocol import Factory
@@ -20,7 +18,7 @@ class NodeConnection(NetstringReceiver):
             self.factory.nodes.remove(pair)
 
     def stringReceived(self, string):
-        self.factory.server.receive_buffer.append(string)
+        self.factory.server.potator.incomingCallback(string)
 
 
 class NodeFactory(Factory):
@@ -37,11 +35,9 @@ class NodeFactory(Factory):
 
 class Server(object):
 
-    def __init__(self, reactor):
+    def __init__(self, reactor, potator):
         self.reactor = reactor
-
-        self.receive_buffer = deque()
-        self.send_buffer = deque()
+        self.potator = potator
 
         # Create the factory
         self.factory = NodeFactory(self)

@@ -35,15 +35,12 @@ class Potator(object):
         log.startLogging(sys.stdout)
         self.db = Database(Lock())
 
-        self.server = Server(reactor)
+        self.server = Server(reactor, self)
         self.interface = LocalInterface()
         # self.stats = StatPrinter(server, interface)
 
-        # To Tor thread
+        # Tun adapter read/write buffer loop
         threads.deferToThread(self.sending_loop)
-
-        # To Local thread
-        threads.deferToThread(self.receiving_loop)
 
     def start(self):
         self.interface.start()
@@ -55,16 +52,13 @@ class Potator(object):
         # self.stats.stop()
         reactor.stop()
 
-    def receiving_loop(self):
-        while True:
-            if self.server.receive_buffer:
-                spore_string = self.server.receive_buffer.popleft()
-                spore = Spore()
-                spore.ParseFromString(spore_string)
+    def incomingCallback(self, spore_string):
+        spore = Spore()
+        spore.ParseFromString(spore_string)
 
-                decoder = ImpactDecoder.IPDecoder()
-                packet = decoder.decode(spore.ipData.data)
-                self.interface.send_buffer.append(packet)
+        decoder = ImpactDecoder.IPDecoder()
+        packet = decoder.decode(spore.ipData.data)
+        self.interface.send_buffer.append(packet)
 
     def sending_loop(self):
         while True:
