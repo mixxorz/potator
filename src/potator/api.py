@@ -7,6 +7,9 @@ from twisted.python import log
 
 class PotatorApiProtocol(basic.LineReceiver):
 
+    def __init__(self, factory):
+        self.factory = factory
+
     def connectionMade(self):
         self.sendLine("Potator v0.1")
 
@@ -45,17 +48,26 @@ class PotatorApiProtocol(basic.LineReceiver):
         self.sendLine('Goodbye.')
         self.transport.loseConnection()
 
+    def do_greeting(self, *args):
+        '''Sends an ourp greeting to onion_url'''
+        onion_url = args[0]
+        if onion_url is None:
+            self.do_help('greeting')
+        else:
+            self.factory.potator.ourp.sendGreeting(onion_url)
+
     def connectionLost(self, reason):
         pass
 
 
 class PotatorApiFactory(protocol.Factory):
 
-    def __init__(self):
+    def __init__(self, potator):
+        self.potator = potator
         log.msg('Started Potator API')
 
     def buildProtocol(self, addr):
-        return PotatorApiProtocol()
+        return PotatorApiProtocol(self)
 
 
 if __name__ == "__main__":
