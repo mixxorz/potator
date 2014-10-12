@@ -10,7 +10,6 @@ from .protocol.potator_pb2 import Spore
 from .stats import StatPrinter
 from .tor.server import Server
 from .tuntap.tuntap import TunInterface
-from .view import CommandInput
 
 
 class LocalInterface(TunInterface):
@@ -37,7 +36,6 @@ class Potator(object):
         self.server = Server(reactor)
         self.interface = LocalInterface()
         # self.stats = StatPrinter(server, interface)
-        self.cmd = CommandInput()
 
         # To Tor thread
         threads.deferToThread(self.sending_loop)
@@ -47,13 +45,11 @@ class Potator(object):
 
     def start(self):
         self.interface.start()
-        self.cmd.start()
         # self.stats.start()
         reactor.run()
 
     def stop(self):
         self.interface.stop()
-        self.cmd.stop()
         # self.stats.stop()
         reactor.stop()
 
