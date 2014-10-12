@@ -28,8 +28,6 @@ class OnionUrlResolutionProtocol(object):
         self.potator.server.sendSpore(destination, spore.SerializeToString())
 
     def processOurp(self, ourpData):
-        log.msg('Received OURP')
-        log.msg(ourpData)
         if ourpData.type == OurpData.REQUEST:
             pass
         elif ourpData.type == OurpData.REPLY:
@@ -44,7 +42,8 @@ class OnionUrlResolutionProtocol(object):
             self.sendGreetingAck(ourpData.onionUrl)
 
         elif ourpData.type == OurpData.GREETING_ACK:
-            pass
+            self.potator.db.setOnionURL(
+                ourpData.ipAddress, ourpData.onionUrl, 1)
         else:
             # Error
             pass

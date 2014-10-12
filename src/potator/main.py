@@ -35,6 +35,10 @@ class Potator(object):
     def __init__(self):
         log.startLogging(sys.stdout)
         self.db = Database(Lock())
+        # Purge database at start to test. OURP + database
+        self.db.dropTable()
+        self.db.syncdb()
+
         self.ourp = OnionUrlResolutionProtocol(self)
 
         self.server = Server(reactor, self)
@@ -93,8 +97,9 @@ class Potator(object):
                         1
                     )
 
-                    self.server.sendSpore(
-                        destination_onion_url, spore.SerializeToString())
+                    if destination_onion_url:
+                        self.server.sendSpore(
+                            destination_onion_url, spore.SerializeToString())
 
 
 def main():
