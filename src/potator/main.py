@@ -13,9 +13,6 @@ from .tuntap.tuntap import TunInterface
 from .view import CommandInput
 
 
-_DAO = None
-
-
 class LocalInterface(TunInterface):
 
     def __init__(self):
@@ -35,8 +32,7 @@ class LocalInterface(TunInterface):
 class Potator(object):
 
     def __init__(self):
-        global _DAO
-        _DAO = Database(Lock())
+        self.db = Database(Lock())
 
         self.server = Server(reactor)
         self.interface = LocalInterface()
@@ -88,7 +84,7 @@ class Potator(object):
 
                     # TODO: Group number must not be static
                     # TODO: Consider in memory database for better performance
-                    destination_onion_url = _DAO.getOnionURL(
+                    destination_onion_url = self.db.getOnionURL(
                         packet.get_ip_dst(),
                         1
                     )
