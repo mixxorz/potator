@@ -118,7 +118,7 @@ def openTunTap():
 
     # retrieve the ComponentId from the TUN/TAP interface
     componentId = get_tuntap_ComponentId()
-    print('componentId = {0}'.format(componentId))
+    # print('componentId = {0}'.format(componentId))
 
     # create a win32file for manipulating the TUN/TAP interface
     tuntap = win32file.CreateFile(
@@ -130,7 +130,7 @@ def openTunTap():
         win32file.FILE_ATTRIBUTE_SYSTEM | win32file.FILE_FLAG_OVERLAPPED,
         None
     )
-    print('tuntap      = {0}'.format(tuntap.handle))
+    # print('tuntap      = {0}'.format(tuntap.handle))
 
     # have Windows consider the interface now connected
     win32file.DeviceIoControl(
@@ -199,7 +199,7 @@ class ReadThread(threading.Thread):
 
         rxbuffer = win32file.AllocateReadBuffer(self.ETHERNET_MTU)
 
-        print TUN_IPv4_ADDRESS
+        # print TUN_IPv4_ADDRESS
 
         while self.goOn:
 
