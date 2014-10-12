@@ -7,7 +7,7 @@ from twisted.internet import reactor, threads
 from twisted.python import log
 
 from .database import Database
-from .protocol.potator_pb2 import Spore
+from .protocol.potator_pb2 import Spore, OurpData
 from .stats import StatPrinter
 from .tor.server import Server
 from .tuntap.tuntap import TunInterface
@@ -53,12 +53,33 @@ class Potator(object):
         reactor.stop()
 
     def incomingCallback(self, spore_string):
+        # TODO: Add logic for network dispatcher
+
+        # Packet Handler
         spore = Spore()
         spore.ParseFromString(spore_string)
 
-        decoder = ImpactDecoder.IPDecoder()
-        packet = decoder.decode(spore.ipData.data)
-        self.interface.send_buffer.append(packet)
+        # TODO: Add OURP logic
+        if spore.dataType == spore.OURP:
+            self.processOurp(spore.ourpData)
+        elif spore.dataType == spore.IP:
+            decoder = ImpactDecoder.IPDecoder()
+            packet = decoder.decode(spore.ipData.data)
+            # Append to local interface buffer
+            self.interface.send_buffer.append(packet)
+
+    def processOurp(self, ourpData):
+        if ourpData.type == OurpData.REQUEST:
+            pass
+        elif ourpData.type == OurpData.REPLY:
+            pass
+        elif ourpData.type == OurpData.GREETING:
+            pass
+        elif ourpData.type == OurpData.GREETING_ACK:
+            pass
+        else:
+            # Error
+            pass
 
     def sending_loop(self):
         while True:
