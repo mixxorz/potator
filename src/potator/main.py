@@ -8,11 +8,10 @@ from twisted.python import log
 
 from .api import PotatorApiFactory
 from .database import Database
-from .protocol.potator_pb2 import Spore, OurpData
-from .stats import StatPrinter
+from .ourp import OnionUrlResolutionProtocol
+from .protocol.potator_pb2 import Spore
 from .tor.server import Server
 from .tuntap.tuntap import TunInterface
-from .util import settings
 
 
 class LocalInterface(TunInterface):
@@ -29,52 +28,6 @@ class LocalInterface(TunInterface):
 
     def write(self, data):
         self.transmitter.transmit(data)
-
-
-class OnionUrlResolutionProtocol(object):
-
-    def __init__(self, potator):
-        self.potator = potator
-
-    def sendGreeting(self, destination):
-        spore = Spore()
-        spore.dataType = spore.OURP
-        spore.castType = spore.BROADCAST
-        spore.ourpData.type = OurpData.GREETING
-        spore.ourpData.ipAddress = settings.IP_ADDRESS
-        spore.ourpData.onionUrl = settings.ONION_URL
-        self.potator.server.sendSpore(destination, spore.SerializeToString())
-
-    def sendGreetingAck(self, destination):
-        spore = Spore()
-        spore.dataType = spore.OURP
-        spore.castType = spore.UNICAST
-        spore.ourpData.type = OurpData.GREETING_ACK
-        spore.ourpData.ipAddress = settings.IP_ADDRESS
-        spore.ourpData.onionUrl = settings.ONION_URL
-        self.potator.server.sendSpore(destination, spore.SerializeToString())
-
-    def processOurp(self, ourpData):
-        if ourpData.type == OurpData.REQUEST:
-            pass
-        elif ourpData.type == OurpData.REPLY:
-            pass
-        elif ourpData.type == OurpData.GREETING:
-            log.msg('Greeting received')
-            log.msg(ourpData)
-            # TODO: Check password and group ID
-            # TODO: Don't just use '1' for group id
-            # Save client's data
-            self.potator.db.setOnionURL(
-                ourpData.ipAddress, ourpData.onionUrl, 1)
-            # Send greeting acknowledge
-            self.sendGreetingAck(ourpData.onionUrl)
-
-        elif ourpData.type == OurpData.GREETING_ACK:
-            pass
-        else:
-            # Error
-            pass
 
 
 class Potator(object):
