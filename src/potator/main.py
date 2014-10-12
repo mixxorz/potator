@@ -4,6 +4,7 @@ from threading import Lock
 
 from impacket import ImpactDecoder
 from twisted.internet import reactor, threads
+from twisted.python import log
 
 from .database import Database
 from .protocol.potator_pb2 import Spore
@@ -31,6 +32,7 @@ class LocalInterface(TunInterface):
 class Potator(object):
 
     def __init__(self):
+        log.startLogging(sys.stdout)
         self.db = Database(Lock())
 
         self.server = Server(reactor)

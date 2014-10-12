@@ -1,10 +1,12 @@
 from collections import deque
 
-from potator.util import settings
 from twisted.internet.endpoints import TCP4ClientEndpoint
 from twisted.internet.protocol import Factory
 from twisted.protocols.basic import NetstringReceiver
+from twisted.python import log
 from txsocksx.client import SOCKS5ClientEndpoint
+
+from potator.util import settings
 
 
 class NodeConnection(NetstringReceiver):
@@ -13,7 +15,7 @@ class NodeConnection(NetstringReceiver):
         # Remove node from node list if connection is lost
         pair = next((x for x in self.factory.nodes if x[1] is self), None)
         if pair:
-            print 'Removing %s' % pair[0]
+            log.msg('Removing %s' % pair[0])
             self.factory.nodes.remove(pair)
 
     def stringReceived(self, string):
@@ -48,10 +50,6 @@ class Server(object):
         # Starts the listening server
         reactor.listenTCP(settings.SERVER_PORT, self.factory)
 
-    def print_err(self, err):
-        pass
-        # print err
-
     def connectionFailure(self, err):
         return err
 
@@ -71,12 +69,11 @@ class Server(object):
             d.addCallback(
                 self.registerNode, self.factory, destination_onion_url)
             d.addCallback(self.sendSpore, spore_string)
-            d.addErrback(self.print_err)
 
         return protocol
 
     def registerNode(self, protocol, factory, onion_url):
-        print 'Register %s' % onion_url
+        log.msg('Register %s' % onion_url)
         factory.nodes.append((onion_url, protocol,))
         return protocol
 
