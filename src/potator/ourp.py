@@ -1,3 +1,6 @@
+import hashlib
+import time
+
 from twisted.python import log
 
 from .protocol.potator_pb2 import Spore, OurpData
@@ -9,10 +12,14 @@ class OnionUrlResolutionProtocol(object):
     def __init__(self, potator):
         self.potator = potator
 
+    def _generateHash(self):
+        return str(hashlib.sha1('%s%s' % (time.time(), settings.IP_ADDRESS)))
+
     def sendGreeting(self, destination):
         spore = Spore()
         spore.dataType = spore.OURP
         spore.castType = spore.BROADCAST
+        spore.hash = self._generateHash()
         spore.ourpData.type = OurpData.GREETING
         spore.ourpData.ipAddress = settings.IP_ADDRESS
         spore.ourpData.onionUrl = settings.ONION_URL

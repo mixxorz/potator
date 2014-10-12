@@ -71,12 +71,13 @@ class Database(object):
         finally:
             self.lock.release()
 
-    def getAllOnionURL(self):
+    def getAllOnionURL(self, group_id):
         self.lock.acquire()
         try:
             con = self.connect()
             cur = con.cursor()
-            cmd = 'SELECT * FROM %s' % self.table_name
+            cmd = 'SELECT onion_url FROM %s ' % self.table_name +\
+                'WHERE group_id = "%s"' % group_id
             cur.execute(cmd)
             rows = cur.fetchall()
             con.close()
