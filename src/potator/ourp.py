@@ -43,13 +43,13 @@ class OnionUrlResolutionProtocol(object):
             # TODO: Check password and group ID
             # TODO: Don't just use '1' for group id
             # Save client's data
-            self.potator.db.setOnionURL(
+            self.potator.db.setOnionUrl(
                 ourpData.ipAddress, ourpData.onionUrl, 1)
             # Send greeting acknowledge
             self.sendGreetingAck(ourpData.onionUrl)
 
         elif ourpData.type == OurpData.GREETING_ACK:
-            self.potator.db.setOnionURL(
+            self.potator.db.setOnionUrl(
                 ourpData.ipAddress, ourpData.onionUrl, 1)
         else:
             # Error

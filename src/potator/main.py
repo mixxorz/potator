@@ -46,7 +46,7 @@ class NetworkDispatcher(object):
         reactor.callLater(self.timeout, self._clearHashStore)
 
     def _broadcast(self, data, group_id, exclude=None):
-        nodes = [x[0] for x in self.potator.db.getAllOnionURL(group_id)]
+        nodes = [x[0] for x in self.potator.db.getAllOnionUrls(group_id)]
 
         if exclude:
             nodes.remove(exclude)
@@ -70,7 +70,7 @@ class Potator(object):
         log.startLogging(sys.stdout)
         self.db = Database(Lock())
         # Purge database at start to test. OURP + database
-        self.db.dropTable()
+        self.db.dropdb()
         self.db.syncdb()
 
         self.ourp = OnionUrlResolutionProtocol(self)
@@ -128,7 +128,7 @@ class Potator(object):
 
                     # TODO: Group number must not be static
                     # TODO: Consider in memory database for better performance
-                    destination_onion_url = self.db.getOnionURL(
+                    destination_onion_url = self.db.getOnionUrl(
                         packet.get_ip_dst(),
                         1
                     )
