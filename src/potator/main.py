@@ -8,6 +8,7 @@ from twisted.python import log
 
 from .api import PotatorApiFactory
 from .database import Database
+from .network_dispatcher import NetworkDispatcher
 from .ourp import OnionUrlResolutionProtocol
 from .protocol.potator_pb2 import Spore
 from .tor.server import Server
@@ -28,40 +29,6 @@ class LocalInterface(TunInterface):
 
     def write(self, data):
         self.transmitter.transmit(data)
-
-
-class NetworkDispatcher(object):
-
-    def __init__(self, potator):
-        self.potator = potator
-        self.hash_cache = []
-        self.timeout = 60
-
-        # Clear every 60 seconds
-        reactor.callLater(self.timeout, self._clearHashStore)
-
-    def _clearHashStore(self):
-        log.msg('Clearing hash store')
-        self.hash_cache = []
-        reactor.callLater(self.timeout, self._clearHashStore)
-
-    def _broadcast(self, data, group_id, exclude=None):
-        nodes = [x[0] for x in self.potator.db.getAllOnionUrls(group_id)]
-
-        if exclude:
-            nodes.remove(exclude)
-
-        for node in nodes:
-            self.potator.server.sendSpore(node, data)
-
-    def handleDispatch(self, spore):
-        log.msg('Handle Dispatch')
-        if spore.castType == Spore.BROADCAST and spore.dataType == Spore.OURP:
-            if not spore.hash in self.hash_cache:
-                # TODO: Group ID should not just be '1'
-                self._broadcast(spore.SerializeToString(), 1)
-                self.hash_cache.append(spore.hash)
-                log.msg('------> Appended')
 
 
 class Potator(object):
