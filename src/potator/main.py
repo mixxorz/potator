@@ -3,7 +3,7 @@ from collections import deque
 from threading import Lock
 
 from impacket import ImpactDecoder
-from twisted.internet import reactor, threads
+from twisted.internet import reactor
 from twisted.python import log
 
 from .api import PotatorApiFactory
@@ -17,15 +17,17 @@ from .tuntap.tuntap import TunInterface
 
 class LocalInterface(TunInterface):
 
-    def __init__(self):
+    def __init__(self, potator):
         self.sent_bytes = 0
         self.received_bytes = 0
         self.receive_buffer = deque()
         self.send_buffer = deque()
+        self.potator = potator
         TunInterface.__init__(self)
 
     def packetReceived(self, data):
-        self.receive_buffer.append(data)
+        # self.receive_buffer.append(data)
+        self.potator.outgoingCallback(data)
 
     def write(self, data):
         self.transmitter.transmit(data)
@@ -44,11 +46,8 @@ class Potator(object):
         self.network_dispatcher = NetworkDispatcher(self)
 
         self.server = Server(reactor, self)
-        self.interface = LocalInterface()
+        self.interface = LocalInterface(self)
         # self.stats = StatPrinter(server, interface)
-
-        # Tun adapter read/write buffer loop
-        threads.deferToThread(self.sending_loop)
 
         reactor.listenTCP(9999, PotatorApiFactory(self))
 
@@ -79,30 +78,27 @@ class Potator(object):
             # Append to local interface buffer
             self.interface.send_buffer.append(packet)
 
-    def sending_loop(self):
-        while True:
-            if self.interface.receive_buffer:
-                packet = self.interface.receive_buffer.popleft()
+    def outgoingCallback(self, packet):
+        # TODO: For testing only. Filtering out unwanted packets.
+        if '4.4.4' in packet.get_ip_dst():
+            self.interface.sent_bytes += packet.get_size()
 
-                if '4.4.4' in packet.get_ip_dst():
-                    self.interface.sent_bytes += packet.get_size()
+            spore = Spore()
+            spore.dataType = spore.IP
+            spore.castType = spore.UNICAST
+            spore.ipData.destinationAddress = packet.get_ip_dst()
+            spore.ipData.data = packet.get_packet()
 
-                    spore = Spore()
-                    spore.dataType = spore.IP
-                    spore.castType = spore.UNICAST
-                    spore.ipData.destinationAddress = packet.get_ip_dst()
-                    spore.ipData.data = packet.get_packet()
+            # TODO: Group number must not be static
+            # TODO: Consider in memory database for better performance
+            destination_onion_url = self.db.getOnionUrl(
+                packet.get_ip_dst(),
+                1
+            )
 
-                    # TODO: Group number must not be static
-                    # TODO: Consider in memory database for better performance
-                    destination_onion_url = self.db.getOnionUrl(
-                        packet.get_ip_dst(),
-                        1
-                    )
-
-                    if destination_onion_url:
-                        self.server.sendSpore(
-                            destination_onion_url, spore.SerializeToString())
+            if destination_onion_url:
+                self.server.sendSpore(
+                    destination_onion_url, spore.SerializeToString())
 
 
 def main():
