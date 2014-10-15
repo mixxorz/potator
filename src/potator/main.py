@@ -1,5 +1,4 @@
 import sys
-from collections import deque
 from threading import Lock
 
 from impacket import ImpactDecoder
@@ -15,24 +14,6 @@ from .tor.server import Server
 from .tuntap.tuntap import TunInterface
 
 
-class LocalInterface(TunInterface):
-
-    def __init__(self, potator):
-        self.sent_bytes = 0
-        self.received_bytes = 0
-        self.receive_buffer = deque()
-        self.send_buffer = deque()
-        self.potator = potator
-        TunInterface.__init__(self)
-
-    def packetReceived(self, data):
-        # self.receive_buffer.append(data)
-        self.potator.outgoingCallback(data)
-
-    def write(self, data):
-        self.transmitter.transmit(data)
-
-
 class Potator(object):
 
     def __init__(self):
@@ -46,7 +27,7 @@ class Potator(object):
         self.network_dispatcher = NetworkDispatcher(self)
 
         self.server = Server(reactor, self)
-        self.interface = LocalInterface(self)
+        self.interface = TunInterface(self)
         # self.stats = StatPrinter(server, interface)
 
         reactor.listenTCP(9999, PotatorApiFactory(self))

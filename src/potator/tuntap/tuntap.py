@@ -1,6 +1,7 @@
 import _winreg as reg
 import threading
 from struct import unpack
+from collections import deque
 
 import pywintypes
 import win32event
@@ -12,12 +13,16 @@ from potator.util import settings
 
 class TunInterface(object):
 
-    def __init__(self):
+    def __init__(self, potator):
         self.tuntap = openTunTap()
+        self.potator = potator
+        self.sent_bytes = 0
+        self.received_bytes = 0
 
-        # self.transmitter = Transmitter(self.tuntap)
         self.readThread = ReadThread(self.tuntap, self)
         self.writeThread = WriteThread(self.tuntap, self)
+
+        self.writeBuffer = deque()
 
     def start(self):
         self.readThread.start()
@@ -28,12 +33,6 @@ class TunInterface(object):
         self.writeThread.close()
         win32file.CloseHandle(self.tuntap)
 
-    def write(self, packet):
-        pass
-        # self.transmitter.transmit(packet.get_packet())
-
-    def packetReceived(self, packet):
-        raise NotImplementedError()
 
 #============================ defines =========================================
 
@@ -223,7 +222,7 @@ class ReadThread(threading.Thread):
                 decoder = ImpactDecoder.IPDecoder()
                 ip_packet = decoder.decode(p)
 
-                self.interface.packetReceived(ip_packet)
+                self.interface.potator.outgoingCallback(ip_packet)
 
     def close(self):
         self.goOn = False
@@ -274,9 +273,9 @@ class WriteThread(threading.Thread):
     def run(self):
 
         while self.goOn:
-            if self.interface.send_buffer:
+            if self.interface.write_buffer:
                 # Receive packet from packet handler
-                p = self.interface.send_buffer.popleft()
+                p = self.interface.write_buffer.popleft()
                 self.interface.received_bytes += p.get_size()
                 # Write to tuntap (transmit)
                 self.transmit(p.get_packet())
