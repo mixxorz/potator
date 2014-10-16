@@ -46,7 +46,7 @@ class Server(object):
         self.reactor.listenTCP(settings.SERVER_PORT, self.factory)
 
     def sendSpore(self, onion_url, spore):
-
+        log.msg('Sending to %s' % onion_url)
         d = self.getProtocol(onion_url)
         d.addCallback(self.send, spore)
 
