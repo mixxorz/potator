@@ -20,7 +20,7 @@ class NetworkDispatcher(object):
         reactor.callLater(self.timeout, self._clearHashStore)
 
     def _broadcast(self, data, group_id, exclude=None):
-        nodes = [x[0] for x in self.potator.db.getAllOnionUrls(group_id)]
+        nodes = [x for x in self.potator.db.getAllOnionUrls(group_id)]
 
         if exclude:
             nodes.remove(exclude)
