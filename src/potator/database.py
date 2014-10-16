@@ -52,6 +52,14 @@ class Database(object):
     def connect(self):
         return lite.connect(self.database_name)
 
+    def cleandb(self):
+        try:
+            self.dropdb()
+        except:
+            pass
+        finally:
+            self.syncdb()
+
     def syncdb(self):
         self.lock.acquire()
         try:

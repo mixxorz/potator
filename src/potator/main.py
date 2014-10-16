@@ -20,8 +20,7 @@ class Potator(object):
         log.startLogging(sys.stdout)
         self.db = Database(Lock())
         # Purge database at start to test. OURP + database
-        self.db.dropdb()
-        self.db.syncdb()
+        self.db.cleandb()
 
         self.ourp = OnionUrlResolutionProtocol(self)
         self.network_dispatcher = NetworkDispatcher(self)
