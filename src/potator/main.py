@@ -56,7 +56,7 @@ class Potator(object):
             decoder = ImpactDecoder.IPDecoder()
             packet = decoder.decode(spore.ipData.data)
             # Append to local interface buffer
-            self.interface.send_buffer.append(packet)
+            self.interface.writeBuffer.append(packet)
 
     def outgoingCallback(self, packet):
         # TODO: For testing only. Filtering out unwanted packets.
