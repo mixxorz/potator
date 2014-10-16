@@ -15,6 +15,27 @@ class OnionUrlResolutionProtocol(object):
     def _generateHash(self):
         return str(hashlib.sha1('%s%s' % (time.time(), settings.IP_ADDRESS)))
 
+    def sendRequest(self, ip_address):
+        spore = Spore()
+        spore.dataType = spore.OURP
+        spore.castType = spore.BROADCAST
+        spore.hash = self._generateHash()
+        spore.ourpData.type = OurpData.REQUEST
+        spore.ourpData.ipAddress = settings.IP_ADDRESS
+        # TODO: There might be a more elegant way of doing this
+        self.potator.network_dispatcher.handleDispatch(spore)
+
+    def sendReply(self):
+        spore = Spore()
+        spore.dataType = spore.OURP
+        spore.castType = spore.BROADCAST
+        spore.hash = self._generateHash()
+        spore.ourpData.type = OurpData.REPLY
+        spore.ourpData.ipAddress = settings.IP_ADDRESS
+        spore.ourpData.onionUrl = settings.ONION_URL
+        # TODO: There might be a more elegant way of doing this
+        self.potator.network_dispatcher.handleDispatch(spore)
+
     def sendGreeting(self, destination):
         spore = Spore()
         spore.dataType = spore.OURP
@@ -37,10 +58,15 @@ class OnionUrlResolutionProtocol(object):
     def processOurp(self, ourpData):
         if ourpData.type == OurpData.REQUEST:
             log.msg('Received OURP Request')
-            pass
+
+            if ourpData.ipAddress == settings.IP_ADDRESS:
+                self.sendReply()
         elif ourpData.type == OurpData.REPLY:
             log.msg('Received OURP Reply')
-            pass
+
+            self.potator.db.setOnionUrl(
+                ourpData.ipAddress, ourpData.onionUrl, 1)
+
         elif ourpData.type == OurpData.GREETING:
             log.msg('Received OURP Greeting')
             # TODO: Check password and group ID
