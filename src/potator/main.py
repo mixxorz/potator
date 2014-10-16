@@ -44,6 +44,10 @@ class Potator(object):
     def incomingCallback(self, spore_string):
         spore = Spore()
         spore.ParseFromString(spore_string)
+        log.msg('Spore hash:')
+        log.msg(spore.hash)
+        log.msg('Spore')
+        log.msg(spore)
         # TODO: Add logic for network dispatcher
         self.network_dispatcher.handleDispatch(spore)
 
