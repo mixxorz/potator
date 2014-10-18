@@ -40,5 +40,5 @@ class NetworkDispatcher(object):
                 self.hash_cache.append(spore.hash)
                 log.msg('Hash stored: %s' % spore.hash)
             else:
-                return none
+                return None
         return spore
