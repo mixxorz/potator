@@ -29,9 +29,15 @@ class NetworkDispatcher(object):
             self.potator.server.sendSpore(node, data)
 
     def handleDispatch(self, spore):
+        ''' handles dispatching of broadcast spores
+
+        returns the spore object. If returns none, it means the packet should be dropped
+        '''
         if spore.castType == Spore.BROADCAST and spore.dataType == Spore.OURP:
             if not spore.hash in self.hash_cache:
                 # TODO: Group ID should not just be '1'
                 self._broadcast(spore.SerializeToString(), 1)
                 self.hash_cache.append(spore.hash)
                 log.msg('Hash stored: %s' % spore.hash)
+                return spore
+        return None

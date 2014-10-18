@@ -49,18 +49,17 @@ class Potator(object):
         log.msg('Spore')
         log.msg(spore)
         # TODO: Add logic for network dispatcher
-        self.network_dispatcher.handleDispatch(spore)
+        spore = self.network_dispatcher.handleDispatch(spore)
 
-        # Packet Handler
-
-        # TODO: Add OURP logic
-        if spore.dataType == spore.OURP:
-            self.ourp.processOurp(spore.ourpData)
-        elif spore.dataType == spore.IP:
-            decoder = ImpactDecoder.IPDecoder()
-            packet = decoder.decode(spore.ipData.data)
-            # Append to local interface buffer
-            self.interface.writeBuffer.append(packet)
+        if spore:
+            # Packet Handler
+            if spore.dataType == spore.OURP:
+                self.ourp.processOurp(spore.ourpData)
+            elif spore.dataType == spore.IP:
+                decoder = ImpactDecoder.IPDecoder()
+                packet = decoder.decode(spore.ipData.data)
+                # Append to local interface buffer
+                self.interface.writeBuffer.append(packet)
 
     def outgoingCallback(self, packet):
         # TODO: For testing only. Filtering out unwanted packets.
