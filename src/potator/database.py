@@ -108,6 +108,7 @@ class Database(object):
             con = self.connect()
             cur = con.cursor()
             cur.execute(_INSERT_SQL, (ip_address, onion_url, group_id))
+            log.msg('Saving: %s = %s = [%d]' % (ip_address, onion, group_id))
             con.commit()
             con.close()
         finally:
