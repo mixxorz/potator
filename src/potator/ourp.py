@@ -13,7 +13,7 @@ class OnionUrlResolutionProtocol(object):
         self.potator = potator
 
     def _generateHash(self):
-        return str(hashlib.sha1('%s%s' % (time.time(), settings.IP_ADDRESS)))
+        return hashlib.sha1('%s%s' % (time.time(), settings.IP_ADDRESS)).hexdigest()
 
     def sendRequest(self, ip_address):
         spore = Spore()
