@@ -20,7 +20,6 @@ class OnionUrlResolutionProtocol(object):
         return hashlib.sha1('%s%s' % (time.time(), settings.IP_ADDRESS)).hexdigest()
 
     def sendRequest(self, ip_address):
-        self.time_greeting_sent = time.time()
         spore = Spore()
         spore.dataType = spore.OURP
         spore.castType = spore.BROADCAST
@@ -42,6 +41,7 @@ class OnionUrlResolutionProtocol(object):
         self.potator.network_dispatcher.handleDispatch(spore)
 
     def sendGreeting(self, destination):
+        self.time_greeting_sent = time.time()
         spore = Spore()
         spore.dataType = spore.OURP
         spore.castType = spore.BROADCAST
