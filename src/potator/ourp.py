@@ -4,6 +4,8 @@ import time
 from twisted.python import log
 
 from .protocol.potator_pb2 import Spore, OurpData
+import time
+
 from .util import settings
 
 
@@ -11,11 +13,14 @@ class OnionUrlResolutionProtocol(object):
 
     def __init__(self, potator):
         self.potator = potator
+        self.time_greeting_sent = None
+        self.time_greeting_ack_laps = []
 
     def _generateHash(self):
         return hashlib.sha1('%s%s' % (time.time(), settings.IP_ADDRESS)).hexdigest()
 
     def sendRequest(self, ip_address):
+        self.time_greeting_sent = time.time()
         spore = Spore()
         spore.dataType = spore.OURP
         spore.castType = spore.BROADCAST
@@ -78,7 +83,11 @@ class OnionUrlResolutionProtocol(object):
             self.sendGreetingAck(ourpData.onionUrl)
 
         elif ourpData.type == OurpData.GREETING_ACK:
+            now = time.time()
             log.msg('Received OURP Greeting Acknowledge')
+            if self.time_greeting_sent:
+                log.msg('ACK LAP: %s' % (now - self.time_greeting_sent))
+            self.time_greeting_ack_laps.append(now)
             self.potator.db.setOnionUrl(
                 ourpData.ipAddress, ourpData.onionUrl, 1)
         else:
