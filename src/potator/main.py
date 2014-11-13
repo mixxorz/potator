@@ -32,7 +32,7 @@ class Potator(object):
         reactor.listenTCP(9999, PotatorApiFactory(self))
 
     def start(self):
-        # self.interface.start()
+        self.interface.start()
         # self.stats.start()
         reactor.run()
 
