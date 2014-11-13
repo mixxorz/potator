@@ -77,6 +77,8 @@ class Potator(object):
             if destination_onion_url:
                 self.server.sendSpore(
                     destination_onion_url, spore.SerializeToString())
+            else:
+                self.ourp.sendRequest(packet.get_ip_dst())
 
 
 def main():
