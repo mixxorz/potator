@@ -273,12 +273,11 @@ class WriteThread(threading.Thread):
     def run(self):
 
         while self.goOn:
-            if self.interface.writeBuffer:
-                # Receive packet from packet handler
-                p = self.interface.writeBuffer.get()
-                self.interface.received_bytes += p.get_size()
-                # Write to tuntap (transmit)
-                self.transmit(p.get_packet())
+            # Receive packet from packet handler
+            p = self.interface.writeBuffer.get()
+            self.interface.received_bytes += p.get_size()
+            # Write to tuntap (transmit)
+            self.transmit(p.get_packet())
 
     def close(self):
         self.goOn = False
