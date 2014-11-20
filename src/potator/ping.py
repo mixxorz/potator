@@ -18,7 +18,7 @@ class PingProtocol(object):
         spore.castType = spore.UNICAST
         spore.ping.data = 'abcdefghijklmnopqrstuvwxyz1234567890'
         spore.ping.reply = reply
-        spore.ping.spore = settings.ONION_URL
+        spore.ping.source = settings.ONION_URL
         self.waiting = True
         self.time_buffer = time.time()
         self.potator.server.sendSpore(destination, spore.SerializeToString())
