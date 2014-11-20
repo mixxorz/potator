@@ -1,5 +1,10 @@
 package potator;
 
+message Ping {
+    required string data = 1;
+    required bool reply = 2;
+}
+
 message OurpData {
     enum OurpType {
         REQUEST = 0;
