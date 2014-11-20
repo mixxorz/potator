@@ -25,7 +25,7 @@ class Potator(object):
 
         self.ourp = OnionUrlResolutionProtocol(self)
         self.network_dispatcher = NetworkDispatcher(self)
-        self.ping = PingProtocol()
+        self.ping = PingProtocol(self)
 
         self.server = Server(reactor, self)
         self.interface = TunInterface(self)

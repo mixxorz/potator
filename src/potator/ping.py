@@ -8,7 +8,8 @@ from .util import settings
 
 class PingProtocol(object):
 
-    def __init__(self):
+    def __init__(self, potator):
+        self.potator = potator
         self.waiting = False
         self.time_buffer = None
 
