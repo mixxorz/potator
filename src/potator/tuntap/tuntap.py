@@ -1,7 +1,7 @@
 import _winreg as reg
 import threading
 from struct import unpack
-from collections import deque
+from Queue import Queue
 
 import pywintypes
 import win32event
@@ -22,7 +22,7 @@ class TunInterface(object):
         self.readThread = ReadThread(self.tuntap, self)
         self.writeThread = WriteThread(self.tuntap, self)
 
-        self.writeBuffer = deque()
+        self.writeBuffer = Queue()
 
     def start(self):
         self.readThread.start()
@@ -273,12 +273,11 @@ class WriteThread(threading.Thread):
     def run(self):
 
         while self.goOn:
-            if self.interface.writeBuffer:
-                # Receive packet from packet handler
-                p = self.interface.writeBuffer.popleft()
-                self.interface.received_bytes += p.get_size()
-                # Write to tuntap (transmit)
-                self.transmit(p.get_packet())
+            # Receive packet from packet handler
+            p = self.interface.writeBuffer.get()
+            self.interface.received_bytes += p.get_size()
+            # Write to tuntap (transmit)
+            self.transmit(p.get_packet())
 
     def close(self):
         self.goOn = False

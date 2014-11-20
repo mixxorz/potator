@@ -17,7 +17,7 @@ from .tuntap.tuntap import TunInterface
 class Potator(object):
 
     def __init__(self):
-        log.startLogging(sys.stdout)
+        # log.startLogging(sys.stdout)
         self.db = Database(Lock())
         # Purge database at start to test. OURP + database
         self.db.cleandb()
@@ -32,7 +32,7 @@ class Potator(object):
         reactor.listenTCP(9999, PotatorApiFactory(self))
 
     def start(self):
-        # self.interface.start()
+        self.interface.start()
         # self.stats.start()
         reactor.run()
 
