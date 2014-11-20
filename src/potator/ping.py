@@ -1,5 +1,6 @@
 import time
 
+from twisted.internet import reactor
 from twisted.python import log
 
 from .protocol.potator_pb2 import Spore
@@ -12,6 +13,10 @@ class PingProtocol(object):
         self.potator = potator
         self.waiting = False
         self.time_buffer = None
+
+    def ping(self, destination, count=4):
+        for x in range(1, count + 1):
+            reactor.callLater(x, self.sendPing, destination)
 
     def sendPing(self, destination, reply=False):
         spore = Spore()
