@@ -18,7 +18,7 @@ _sym_db = _symbol_database.Default()
 DESCRIPTOR = _descriptor.FileDescriptor(
   name='potator.proto',
   package='potator',
-  serialized_pb=_b('\n\rpotator.proto\x12\x07potator\"#\n\x04Ping\x12\x0c\n\x04\x64\x61ta\x18\x01 \x02(\t\x12\r\n\x05reply\x18\x02 \x02(\x08\"\x9d\x01\n\x08OurpData\x12(\n\x04type\x18\x01 \x02(\x0e\x32\x1a.potator.OurpData.OurpType\x12\x11\n\tipAddress\x18\x02 \x02(\t\x12\x10\n\x08onionUrl\x18\x03 \x01(\t\"B\n\x08OurpType\x12\x0b\n\x07REQUEST\x10\x00\x12\t\n\x05REPLY\x10\x01\x12\x0c\n\x08GREETING\x10\x02\x12\x10\n\x0cGREETING_ACK\x10\x03\"2\n\x06IpData\x12\x1a\n\x12\x64\x65stinationAddress\x18\x01 \x02(\t\x12\x0c\n\x04\x64\x61ta\x18\x02 \x02(\x0c\"\xf7\x01\n\x05Spore\x12\x0c\n\x04hash\x18\x01 \x01(\t\x12)\n\x08\x64\x61taType\x18\x02 \x02(\x0e\x32\x17.potator.Spore.DataType\x12)\n\x08\x63\x61stType\x18\x03 \x02(\x0e\x32\x17.potator.Spore.CastType\x12#\n\x08ourpData\x18\x04 \x01(\x0b\x32\x11.potator.OurpData\x12\x1f\n\x06ipData\x18\x05 \x01(\x0b\x32\x0f.potator.IpData\"\x1c\n\x08\x44\x61taType\x12\x06\n\x02IP\x10\x00\x12\x08\n\x04OURP\x10\x01\"&\n\x08\x43\x61stType\x12\x0b\n\x07UNICAST\x10\x00\x12\r\n\tBROADCAST\x10\x01')
+  serialized_pb=_b('\n\rpotator.proto\x12\x07potator\"#\n\x04Ping\x12\x0c\n\x04\x64\x61ta\x18\x01 \x02(\t\x12\r\n\x05reply\x18\x02 \x02(\x08\"\x9d\x01\n\x08OurpData\x12(\n\x04type\x18\x01 \x02(\x0e\x32\x1a.potator.OurpData.OurpType\x12\x11\n\tipAddress\x18\x02 \x02(\t\x12\x10\n\x08onionUrl\x18\x03 \x01(\t\"B\n\x08OurpType\x12\x0b\n\x07REQUEST\x10\x00\x12\t\n\x05REPLY\x10\x01\x12\x0c\n\x08GREETING\x10\x02\x12\x10\n\x0cGREETING_ACK\x10\x03\"2\n\x06IpData\x12\x1a\n\x12\x64\x65stinationAddress\x18\x01 \x02(\t\x12\x0c\n\x04\x64\x61ta\x18\x02 \x02(\x0c\"\x9e\x02\n\x05Spore\x12\x0c\n\x04hash\x18\x01 \x01(\t\x12)\n\x08\x64\x61taType\x18\x02 \x02(\x0e\x32\x17.potator.Spore.DataType\x12)\n\x08\x63\x61stType\x18\x03 \x02(\x0e\x32\x17.potator.Spore.CastType\x12#\n\x08ourpData\x18\x04 \x01(\x0b\x32\x11.potator.OurpData\x12\x1f\n\x06ipData\x18\x05 \x01(\x0b\x32\x0f.potator.IpData\x12\x1b\n\x04ping\x18\x06 \x01(\x0b\x32\r.potator.Ping\"&\n\x08\x44\x61taType\x12\x06\n\x02IP\x10\x00\x12\x08\n\x04OURP\x10\x01\x12\x08\n\x04PING\x10\x02\"&\n\x08\x43\x61stType\x12\x0b\n\x07UNICAST\x10\x00\x12\r\n\tBROADCAST\x10\x01')
 )
 _sym_db.RegisterFileDescriptor(DESCRIPTOR)
 
@@ -68,11 +68,15 @@ _SPORE_DATATYPE = _descriptor.EnumDescriptor(
       name='OURP', index=1, number=1,
       options=None,
       type=None),
+    _descriptor.EnumValueDescriptor(
+      name='PING', index=2, number=2,
+      options=None,
+      type=None),
   ],
   containing_type=None,
   options=None,
-  serialized_start=455,
-  serialized_end=483,
+  serialized_start=484,
+  serialized_end=522,
 )
 _sym_db.RegisterEnumDescriptor(_SPORE_DATATYPE)
 
@@ -93,8 +97,8 @@ _SPORE_CASTTYPE = _descriptor.EnumDescriptor(
   ],
   containing_type=None,
   options=None,
-  serialized_start=485,
-  serialized_end=523,
+  serialized_start=524,
+  serialized_end=562,
 )
 _sym_db.RegisterEnumDescriptor(_SPORE_CASTTYPE)
 
@@ -260,6 +264,13 @@ _SPORE = _descriptor.Descriptor(
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
+    _descriptor.FieldDescriptor(
+      name='ping', full_name='potator.Spore.ping', index=5,
+      number=6, type=11, cpp_type=10, label=1,
+      has_default_value=False, default_value=None,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
   ],
   extensions=[
   ],
@@ -274,7 +285,7 @@ _SPORE = _descriptor.Descriptor(
   oneofs=[
   ],
   serialized_start=276,
-  serialized_end=523,
+  serialized_end=562,
 )
 
 _OURPDATA.fields_by_name['type'].enum_type = _OURPDATA_OURPTYPE
@@ -283,6 +294,7 @@ _SPORE.fields_by_name['dataType'].enum_type = _SPORE_DATATYPE
 _SPORE.fields_by_name['castType'].enum_type = _SPORE_CASTTYPE
 _SPORE.fields_by_name['ourpData'].message_type = _OURPDATA
 _SPORE.fields_by_name['ipData'].message_type = _IPDATA
+_SPORE.fields_by_name['ping'].message_type = _PING
 _SPORE_DATATYPE.containing_type = _SPORE
 _SPORE_CASTTYPE.containing_type = _SPORE
 DESCRIPTOR.message_types_by_name['Ping'] = _PING

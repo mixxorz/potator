@@ -27,6 +27,7 @@ message Spore {
     enum DataType {
         IP = 0;
         OURP = 1;
+        PING = 2;
     }
 
     enum CastType {
@@ -39,4 +40,5 @@ message Spore {
     required CastType castType = 3;
     optional OurpData ourpData = 4;
     optional IpData ipData = 5;
+    optional Ping ping = 6;
 }
