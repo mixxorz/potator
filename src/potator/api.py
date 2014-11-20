@@ -62,6 +62,7 @@ class PotatorApiProtocol(basic.LineReceiver):
         if onion_url is None:
             self.do_help('ping')
         else:
+            log.msg('Pinging %s' % onion_url)
             self.factory.potator.ping.sendPing(onion_url)
 
     def connectionLost(self, reason):
