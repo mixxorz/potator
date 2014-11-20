@@ -1,8 +1,9 @@
 package potator;
 
 message Ping {
-    required string data = 1;
-    required bool reply = 2;
+    required string source = 1;
+    required string data = 2;
+    required bool reply = 3;
 }
 
 message OurpData {

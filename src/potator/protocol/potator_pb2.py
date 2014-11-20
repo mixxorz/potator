@@ -18,7 +18,7 @@ _sym_db = _symbol_database.Default()
 DESCRIPTOR = _descriptor.FileDescriptor(
   name='potator.proto',
   package='potator',
-  serialized_pb=_b('\n\rpotator.proto\x12\x07potator\"#\n\x04Ping\x12\x0c\n\x04\x64\x61ta\x18\x01 \x02(\t\x12\r\n\x05reply\x18\x02 \x02(\x08\"\x9d\x01\n\x08OurpData\x12(\n\x04type\x18\x01 \x02(\x0e\x32\x1a.potator.OurpData.OurpType\x12\x11\n\tipAddress\x18\x02 \x02(\t\x12\x10\n\x08onionUrl\x18\x03 \x01(\t\"B\n\x08OurpType\x12\x0b\n\x07REQUEST\x10\x00\x12\t\n\x05REPLY\x10\x01\x12\x0c\n\x08GREETING\x10\x02\x12\x10\n\x0cGREETING_ACK\x10\x03\"2\n\x06IpData\x12\x1a\n\x12\x64\x65stinationAddress\x18\x01 \x02(\t\x12\x0c\n\x04\x64\x61ta\x18\x02 \x02(\x0c\"\x9e\x02\n\x05Spore\x12\x0c\n\x04hash\x18\x01 \x01(\t\x12)\n\x08\x64\x61taType\x18\x02 \x02(\x0e\x32\x17.potator.Spore.DataType\x12)\n\x08\x63\x61stType\x18\x03 \x02(\x0e\x32\x17.potator.Spore.CastType\x12#\n\x08ourpData\x18\x04 \x01(\x0b\x32\x11.potator.OurpData\x12\x1f\n\x06ipData\x18\x05 \x01(\x0b\x32\x0f.potator.IpData\x12\x1b\n\x04ping\x18\x06 \x01(\x0b\x32\r.potator.Ping\"&\n\x08\x44\x61taType\x12\x06\n\x02IP\x10\x00\x12\x08\n\x04OURP\x10\x01\x12\x08\n\x04PING\x10\x02\"&\n\x08\x43\x61stType\x12\x0b\n\x07UNICAST\x10\x00\x12\r\n\tBROADCAST\x10\x01')
+  serialized_pb=_b('\n\rpotator.proto\x12\x07potator\"3\n\x04Ping\x12\x0e\n\x06source\x18\x01 \x02(\t\x12\x0c\n\x04\x64\x61ta\x18\x02 \x02(\t\x12\r\n\x05reply\x18\x03 \x02(\x08\"\x9d\x01\n\x08OurpData\x12(\n\x04type\x18\x01 \x02(\x0e\x32\x1a.potator.OurpData.OurpType\x12\x11\n\tipAddress\x18\x02 \x02(\t\x12\x10\n\x08onionUrl\x18\x03 \x01(\t\"B\n\x08OurpType\x12\x0b\n\x07REQUEST\x10\x00\x12\t\n\x05REPLY\x10\x01\x12\x0c\n\x08GREETING\x10\x02\x12\x10\n\x0cGREETING_ACK\x10\x03\"2\n\x06IpData\x12\x1a\n\x12\x64\x65stinationAddress\x18\x01 \x02(\t\x12\x0c\n\x04\x64\x61ta\x18\x02 \x02(\x0c\"\x9e\x02\n\x05Spore\x12\x0c\n\x04hash\x18\x01 \x01(\t\x12)\n\x08\x64\x61taType\x18\x02 \x02(\x0e\x32\x17.potator.Spore.DataType\x12)\n\x08\x63\x61stType\x18\x03 \x02(\x0e\x32\x17.potator.Spore.CastType\x12#\n\x08ourpData\x18\x04 \x01(\x0b\x32\x11.potator.OurpData\x12\x1f\n\x06ipData\x18\x05 \x01(\x0b\x32\x0f.potator.IpData\x12\x1b\n\x04ping\x18\x06 \x01(\x0b\x32\r.potator.Ping\"&\n\x08\x44\x61taType\x12\x06\n\x02IP\x10\x00\x12\x08\n\x04OURP\x10\x01\x12\x08\n\x04PING\x10\x02\"&\n\x08\x43\x61stType\x12\x0b\n\x07UNICAST\x10\x00\x12\r\n\tBROADCAST\x10\x01')
 )
 _sym_db.RegisterFileDescriptor(DESCRIPTOR)
 
@@ -49,8 +49,8 @@ _OURPDATA_OURPTYPE = _descriptor.EnumDescriptor(
   ],
   containing_type=None,
   options=None,
-  serialized_start=155,
-  serialized_end=221,
+  serialized_start=171,
+  serialized_end=237,
 )
 _sym_db.RegisterEnumDescriptor(_OURPDATA_OURPTYPE)
 
@@ -75,8 +75,8 @@ _SPORE_DATATYPE = _descriptor.EnumDescriptor(
   ],
   containing_type=None,
   options=None,
-  serialized_start=484,
-  serialized_end=522,
+  serialized_start=500,
+  serialized_end=538,
 )
 _sym_db.RegisterEnumDescriptor(_SPORE_DATATYPE)
 
@@ -97,8 +97,8 @@ _SPORE_CASTTYPE = _descriptor.EnumDescriptor(
   ],
   containing_type=None,
   options=None,
-  serialized_start=524,
-  serialized_end=562,
+  serialized_start=540,
+  serialized_end=578,
 )
 _sym_db.RegisterEnumDescriptor(_SPORE_CASTTYPE)
 
@@ -111,15 +111,22 @@ _PING = _descriptor.Descriptor(
   containing_type=None,
   fields=[
     _descriptor.FieldDescriptor(
-      name='data', full_name='potator.Ping.data', index=0,
+      name='source', full_name='potator.Ping.source', index=0,
       number=1, type=9, cpp_type=9, label=2,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
     _descriptor.FieldDescriptor(
-      name='reply', full_name='potator.Ping.reply', index=1,
-      number=2, type=8, cpp_type=7, label=2,
+      name='data', full_name='potator.Ping.data', index=1,
+      number=2, type=9, cpp_type=9, label=2,
+      has_default_value=False, default_value=_b("").decode('utf-8'),
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
+    _descriptor.FieldDescriptor(
+      name='reply', full_name='potator.Ping.reply', index=2,
+      number=3, type=8, cpp_type=7, label=2,
       has_default_value=False, default_value=False,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
@@ -136,7 +143,7 @@ _PING = _descriptor.Descriptor(
   oneofs=[
   ],
   serialized_start=26,
-  serialized_end=61,
+  serialized_end=77,
 )
 
 
@@ -180,8 +187,8 @@ _OURPDATA = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=64,
-  serialized_end=221,
+  serialized_start=80,
+  serialized_end=237,
 )
 
 
@@ -217,8 +224,8 @@ _IPDATA = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=223,
-  serialized_end=273,
+  serialized_start=239,
+  serialized_end=289,
 )
 
 
@@ -284,8 +291,8 @@ _SPORE = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=276,
-  serialized_end=562,
+  serialized_start=292,
+  serialized_end=578,
 )
 
 _OURPDATA.fields_by_name['type'].enum_type = _OURPDATA_OURPTYPE
