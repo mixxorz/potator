@@ -57,6 +57,8 @@ class Potator(object):
                 packet = decoder.decode(spore.ipData.data)
                 # Append to local interface buffer
                 self.interface.writeBuffer.put(packet)
+            elif spore.dataType == spore.PING:
+                self.ping.processPing(spore.ping)
 
     def outgoingCallback(self, packet):
         # TODO: For testing only. Filtering out unwanted packets.
