@@ -28,6 +28,7 @@ class PingProtocol(object):
         if ping.reply and self.waiting:
             log.msg('PING: %s' % (now - self.time_buffer))
         else:
+            log.msg('Sending reply to %s' % ping.source)
             self.sendPing(ping.source, True)
 
         self.waiting = False

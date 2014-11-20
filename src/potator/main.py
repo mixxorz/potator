@@ -58,6 +58,7 @@ class Potator(object):
                 # Append to local interface buffer
                 self.interface.writeBuffer.put(packet)
             elif spore.dataType == spore.PING:
+                log.msg('Received PING')
                 self.ping.processPing(spore.ping)
 
     def outgoingCallback(self, packet):
