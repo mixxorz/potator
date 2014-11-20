@@ -48,6 +48,8 @@ class Potator(object):
         spore.ParseFromString(spore_string)
         spore = self.network_dispatcher.handleDispatch(spore)
 
+        log.msg(spore)
+
         if spore:
             # Packet Handler
             if spore.dataType == spore.OURP:
