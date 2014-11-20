@@ -22,10 +22,6 @@ class PingProtocol(object):
         spore.ping.source = settings.ONION_URL
         self.waiting = True
         self.time_buffer = time.time()
-        log.msg('sending...')
-        log.msg(destination)
-        log.msg(spore)
-        log.msg(spore.SerializeToString())
         self.potator.server.sendSpore(destination, spore.SerializeToString())
 
     def processPing(self, ping):
