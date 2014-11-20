@@ -46,8 +46,13 @@ class Potator(object):
     def incomingCallback(self, spore_string):
         spore = Spore()
         spore.ParseFromString(spore_string)
+
+        log.msg('FIRST')
+        log.msg(spore)
+
         spore = self.network_dispatcher.handleDispatch(spore)
 
+        log.msg('SECOND')
         log.msg(spore)
 
         if spore:
