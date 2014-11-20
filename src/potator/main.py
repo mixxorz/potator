@@ -9,6 +9,7 @@ from .api import PotatorApiFactory
 from .database import Database
 from .network_dispatcher import NetworkDispatcher
 from .ourp import OnionUrlResolutionProtocol
+from .ping import PingProtocol
 from .protocol.potator_pb2 import Spore
 from .tor.server import Server
 from .tuntap.tuntap import TunInterface
@@ -24,6 +25,7 @@ class Potator(object):
 
         self.ourp = OnionUrlResolutionProtocol(self)
         self.network_dispatcher = NetworkDispatcher(self)
+        self.ping = PingProtocol()
 
         self.server = Server(reactor, self)
         self.interface = TunInterface(self)
