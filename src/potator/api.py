@@ -56,6 +56,15 @@ class PotatorApiProtocol(basic.LineReceiver):
         else:
             self.factory.potator.ourp.sendGreeting(onion_url)
 
+    def do_ping(self, *args):
+        '''Sends an internal ping to onion_url'''
+        onion_url = args[0]
+        if onion_url is None:
+            self.do_help('ping')
+        else:
+            log.msg('Pinging %s' % onion_url)
+            self.factory.potator.ping.ping(onion_url)
+
     def connectionLost(self, reason):
         pass
 

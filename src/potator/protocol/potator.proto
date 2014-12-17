@@ -1,5 +1,11 @@
 package potator;
 
+message Ping {
+    required string source = 1;
+    required string data = 2;
+    required bool reply = 3;
+}
+
 message OurpData {
     enum OurpType {
         REQUEST = 0;
@@ -22,6 +28,7 @@ message Spore {
     enum DataType {
         IP = 0;
         OURP = 1;
+        PING = 2;
     }
 
     enum CastType {
@@ -34,4 +41,5 @@ message Spore {
     required CastType castType = 3;
     optional OurpData ourpData = 4;
     optional IpData ipData = 5;
+    optional Ping ping = 6;
 }

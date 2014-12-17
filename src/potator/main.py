@@ -9,6 +9,7 @@ from .api import PotatorApiFactory
 from .database import Database
 from .network_dispatcher import NetworkDispatcher
 from .ourp import OnionUrlResolutionProtocol
+from .ping import PingProtocol
 from .protocol.potator_pb2 import Spore
 from .tor.server import Server
 from .tuntap.tuntap import TunInterface
@@ -17,13 +18,14 @@ from .tuntap.tuntap import TunInterface
 class Potator(object):
 
     def __init__(self):
-        # log.startLogging(sys.stdout)
+        log.startLogging(sys.stdout)
         self.db = Database(Lock())
         # Purge database at start to test. OURP + database
         self.db.cleandb()
 
         self.ourp = OnionUrlResolutionProtocol(self)
         self.network_dispatcher = NetworkDispatcher(self)
+        self.ping = PingProtocol(self)
 
         self.server = Server(reactor, self)
         self.interface = TunInterface(self)
@@ -54,7 +56,9 @@ class Potator(object):
                 decoder = ImpactDecoder.IPDecoder()
                 packet = decoder.decode(spore.ipData.data)
                 # Append to local interface buffer
-                self.interface.writeBuffer.append(packet)
+                self.interface.writeBuffer.put(packet)
+            elif spore.dataType == spore.PING:
+                self.ping.processPing(spore.ping)
 
     def outgoingCallback(self, packet):
         # TODO: For testing only. Filtering out unwanted packets.
