@@ -228,25 +228,6 @@ class ReadThread(threading.Thread):
         self.goOn = False
 
 
-class Transmitter(object):
-
-    def __init__(self, tuntap):
-
-        self.tuntap = tuntap
-        self.goOn = True
-        self.overlappedTx = pywintypes.OVERLAPPED()
-        self.overlappedTx.hEvent = win32event.CreateEvent(None, 0, 0, None)
-
-    def transmit(self, dataToTransmit):
-
-        # write over tuntap interface
-        win32file.WriteFile(self.tuntap, dataToTransmit, self.overlappedTx)
-        win32event.WaitForSingleObject(
-            self.overlappedTx.hEvent, win32event.INFINITE)
-        self.overlappedTx.Offset = self.overlappedTx.Offset + \
-            len(dataToTransmit)
-
-
 class WriteThread(threading.Thread):
 
     '''
