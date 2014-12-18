@@ -71,24 +71,24 @@ class Potator(object):
 
     def outgoingCallback(self, packet):
         # TODO: For testing only. Filtering out unwanted packets.
-        if '4.4.4' in packet.get_ip_dst():
-            self.interface.sent_bytes += packet.get_size()
+        # if '4.4.4' in packet.get_ip_dst():
+        self.interface.sent_bytes += packet.get_size()
 
-            spore = Spore()
-            spore.dataType = spore.IP
-            spore.castType = spore.UNICAST
-            spore.ipData.destinationAddress = packet.get_ip_dst()
-            spore.ipData.data = packet.get_packet()
+        spore = Spore()
+        spore.dataType = spore.IP
+        spore.castType = spore.UNICAST
+        spore.ipData.destinationAddress = packet.get_ip_dst()
+        spore.ipData.data = packet.get_packet()
 
-            # TODO: Group number must not be static
-            # TODO: Consider in memory database for better performance
-            destination_onion_url = self.db.getOnionUrl(packet.get_ip_dst())
+        # TODO: Group number must not be static
+        # TODO: Consider in memory database for better performance
+        destination_onion_url = self.db.getOnionUrl(packet.get_ip_dst())
 
-            if destination_onion_url:
-                self.server.sendSpore(
-                    destination_onion_url, spore.SerializeToString())
-            else:
-                self.ourp.sendRequest(packet.get_ip_dst())
+        if destination_onion_url:
+            self.server.sendSpore(
+                destination_onion_url, spore.SerializeToString())
+        else:
+            self.ourp.sendRequest(packet.get_ip_dst())
 
 
 def main():
