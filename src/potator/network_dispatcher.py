@@ -40,6 +40,6 @@ class NetworkDispatcher(object):
                 self.hash_cache.append(spore.hash)
                 log.msg('Hash stored: %s' % spore.hash)
             else:
-                log.msg('Duplicate broadcast, dropping. %s', spore.hash)
+                log.msg('Duplicate broadcast, dropping. ', spore.hash)
                 return None
         return spore

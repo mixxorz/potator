@@ -52,6 +52,7 @@ class OnionUrlResolutionProtocol(object):
         spore.ourpData.onionUrl = self.potator.server.tor_launcher.port.getHost(
         ).onion_uri
         self.potator.server.sendSpore(destination, spore.SerializeToString())
+        self.potator.network_dispatcher.hash_cache.append(spore.hash)
 
     def sendGreetingAck(self, destination):
         spore = Spore()
