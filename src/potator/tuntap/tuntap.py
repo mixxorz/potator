@@ -58,7 +58,7 @@ TUNTAP_COMPONENT_ID = 'tap0901'
 #=== tun/tap-related functions
 
 
-def get_tuntap_ComponentId():
+def get_tuntap_ComponentId(number=0):
     '''
     \brief Retrieve the instance ID of the TUN/TAP interface from the Windows
         registry,
@@ -72,6 +72,7 @@ def get_tuntap_ComponentId():
     \return The 'ComponentId' associated with the TUN/TAP interface, a string
         of the form "{A9A413D7-4D1C-47BA-A3A9-92F091828881}".
     '''
+    instances = []
     with reg.OpenKey(reg.HKEY_LOCAL_MACHINE, ADAPTER_KEY) as adapters:
         try:
             for i in xrange(10000):
@@ -81,13 +82,18 @@ def get_tuntap_ComponentId():
                         component_id = reg.QueryValueEx(
                             adapter, 'ComponentId')[0]
                         if component_id == TUNTAP_COMPONENT_ID:
-                            return reg.QueryValueEx(
+                            instances.append(reg.QueryValueEx(
                                 adapter, 'NetCfgInstanceId'
-                            )[0]
+                            )[0])
                     except WindowsError:
                         pass
         except WindowsError:
             pass
+
+    try:
+        return instances[number]
+    except IndexError, e:
+        raise e
 
 
 def CTL_CODE(device_type, function, method, access):
@@ -112,19 +118,40 @@ def openTunTap(ip_address):
     ip_address = [int(x) for x in ip_address.split('.')]
 
     # retrieve the ComponentId from the TUN/TAP interface
-    componentId = get_tuntap_ComponentId()
+    # componentId = get_tuntap_ComponentId()
     # print('componentId = {0}'.format(componentId))
 
     # create a win32file for manipulating the TUN/TAP interface
-    tuntap = win32file.CreateFile(
-        r'\\.\Global\%s.tap' % componentId,
-        win32file.GENERIC_READ | win32file.GENERIC_WRITE,
-        win32file.FILE_SHARE_READ | win32file.FILE_SHARE_WRITE,
-        None,
-        win32file.OPEN_EXISTING,
-        win32file.FILE_ATTRIBUTE_SYSTEM | win32file.FILE_FLAG_OVERLAPPED,
-        None
-    )
+    # tuntap = win32file.CreateFile(
+    #     r'\\.\Global\%s.tap' % componentId,
+    #     win32file.GENERIC_READ | win32file.GENERIC_WRITE,
+    #     win32file.FILE_SHARE_READ | win32file.FILE_SHARE_WRITE,
+    #     None,
+    #     win32file.OPEN_EXISTING,
+    #     win32file.FILE_ATTRIBUTE_SYSTEM | win32file.FILE_FLAG_OVERLAPPED,
+    #     None
+    # )
+
+    for number in range(0, 10):
+        # retrieve the ComponentId from the TUN/TAP interface
+        componentId = get_tuntap_ComponentId(number)
+
+        # This will fail if already attached
+        # create a win32file for manipulating the TUN/TAP interface\
+        try:
+            tuntap = win32file.CreateFile(
+                r'\\.\Global\%s.tap' % componentId,
+                win32file.GENERIC_READ | win32file.GENERIC_WRITE,
+                win32file.FILE_SHARE_READ | win32file.FILE_SHARE_WRITE,
+                None,
+                win32file.OPEN_EXISTING,
+                win32file.FILE_ATTRIBUTE_SYSTEM | win32file.FILE_FLAG_OVERLAPPED,
+                None
+            )
+            break
+        except:
+            continue
+
     # print('tuntap      = {0}'.format(tuntap.handle))
 
     # have Windows consider the interface now connected
