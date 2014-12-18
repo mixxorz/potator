@@ -1,6 +1,7 @@
 import hashlib
 import time
 
+from twisted.internet import task
 from twisted.python import log
 
 from .protocol.potator_pb2 import Spore, OurpData
@@ -12,6 +13,7 @@ class OnionUrlResolutionProtocol(object):
         self.potator = potator
         self.time_greeting_sent = None
         self.time_greeting_ack_laps = []
+        self.greeting_loop = None
 
     def _generateHash(self):
         return hashlib.sha1(
@@ -50,7 +52,18 @@ class OnionUrlResolutionProtocol(object):
         spore.ourpData.ipAddress = self.potator.config['IP_ADDRESS']
         spore.ourpData.onionUrl = self.potator.server.tor_launcher.port.getHost(
         ).onion_uri
-        self.potator.server.sendSpore(destination, spore.SerializeToString())
+
+        def looper():
+            # Generate new hash every retry
+            spore.hash = self._generateHash()
+            self.potator.server.sendSpore(
+                destination, spore.SerializeToString())
+
+        # Retry every 5 seconds
+        l = task.LoopingCall(looper)
+        l.start(5.0)
+        self.greeting_loop = l
+        # self.potator.server.sendSpore(destination, spore.SerializeToString())
         self.potator.network_dispatcher.hash_cache.append(spore.hash)
 
     def sendGreetingAck(self, destination):
@@ -89,6 +102,11 @@ class OnionUrlResolutionProtocol(object):
                 log.msg('ACK LAP: %s' % (now - self.time_greeting_sent))
             self.time_greeting_ack_laps.append(now)
             self.potator.db.setOnionUrl(ourpData.ipAddress, ourpData.onionUrl)
+
+            # Stop the looping call
+            if self.greeting_loop:
+                self.greeting_loop.stop()
+                self.greeting_loop = None
         else:
             # Error
             pass
