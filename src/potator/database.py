@@ -126,3 +126,18 @@ class Database(object):
             self.lock.release()
 
         return [x[0] for x in rows]
+
+
+class OnionIPMapper(object):
+
+    def __init__(self):
+        self.mappings = {}
+
+    def getOnionUrl(self, ip_address):
+        return self.mappings.get('ip_address')
+
+    def setOnionUrl(self, ip_address, onion_url):
+        self.mappings[ip_address] = onion_url
+
+    def getAllOnionUrls(self):
+        return [value for key, value in self.mappings.iteritems()]
