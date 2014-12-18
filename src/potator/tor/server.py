@@ -1,10 +1,14 @@
+import os
+
 from twisted.internet import defer
 from twisted.internet.endpoints import TCP4ClientEndpoint
 from twisted.internet.protocol import Factory
 from twisted.protocols.basic import NetstringReceiver
 from twisted.python import log
 from txsocksx.client import SOCKS5ClientEndpoint
+from txtorcon import TCPHiddenServiceEndpoint
 
+from .control import TorLauncher
 from potator.util import settings
 
 
@@ -43,7 +47,10 @@ class Server(object):
         self.factory = NodeFactory(self)
 
         # Starts the listening server
-        self.reactor.listenTCP(settings.SERVER_PORT, self.factory)
+        # self.reactor.listenTCP(settings.SERVER_PORT, self.factory)
+
+        # Starts Tor and the listening server
+        self.tor_launcher = TorLauncher(self.factory)
 
     def sendSpore(self, onion_url, spore):
         log.msg('Sending to %s' % onion_url)
