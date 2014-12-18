@@ -1,3 +1,4 @@
+import glob
 import os
 
 import txtorcon
@@ -13,6 +14,10 @@ class TorLauncher(object):
         # Tor Configuration
         # TODO: This is only for testing, configure properly for production
         data_directory = os.path.join(os.environ['AppData'], 'potator', '0000')
+        try:
+            os.mkdir(data_directory)
+        except OSError:
+            pass
         self.config = txtorcon.TorConfig()
         self.config.SocksPort = 7700
         self.config.DataDirectory = data_directory
@@ -26,10 +31,23 @@ class TorLauncher(object):
         ]
         self.config.save()
 
+        # TODO: REFRACTOR
+        tor_binary = None
+        globs = (
+            'C:\\Program Files\\Tor',
+            'C:\\Program Files (x86)\\Tor',
+        )
+        for pattern in globs:
+            for path in glob.glob(pattern):
+                torbin = os.path.join(path, 'tor.exe')
+                if os.path.isfile(torbin) and os.access(torbin, os.X_OK):
+                    tor_binary = torbin
+                    break
+
         d = txtorcon.launch_tor(
             self.config,
             reactor,
-            tor_binary='C:\\Program Files (x86)\\Tor\\tor.exe',
+            tor_binary=tor_binary,
             progress_updates=self.progress)
         d.addCallback(self.launched).addErrback(self.error)
 
