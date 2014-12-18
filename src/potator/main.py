@@ -1,3 +1,4 @@
+import argparse
 import sys
 
 from impacket import ImpactDecoder
@@ -16,13 +17,14 @@ from .tuntap.tuntap import TunInterface
 
 class Potator(object):
 
-    def __init__(self):
+    def __init__(self, args):
         log.startLogging(sys.stdout)
         self.db = OnionIPMapper()
 
         # Store all configuration in this dictionary
         self.config = {
-            'IP_ADDRESS': sys.argv[1],
+            'IP_ADDRESS': args.ip_address,
+            'NETWORK_ID': args.network_identifier,
             'SOCKS_PORT': 7700,
             'HIDDEN_SERVICE_PORT': 7701
         }
@@ -87,7 +89,15 @@ class Potator(object):
 
 
 def main():
-    app = Potator()
+    parser = argparse.ArgumentParser(description='Potator v0.1')
+    parser.add_argument(
+        'ip_address',
+        help='IP address that will be set for this Potator client.')
+    parser.add_argument(
+        'network_identifier',
+        help='A string that identifies this instance of Potator.')
+
+    app = Potator(parser.parse_args())
 
     try:
         app.start()
