@@ -13,7 +13,7 @@ class TorLauncher(object):
         self.port = None
         # Tor Configuration
         data_directory = os.path.join(
-            os.environ['AppData'], 'potator',
+            'C:\\', 'potator',
             self.server.potator.config['NETWORK_ID'])
         try:
             os.mkdir(data_directory)
