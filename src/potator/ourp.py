@@ -58,13 +58,12 @@ class OnionUrlResolutionProtocol(object):
             spore.hash = self._generateHash()
             self.potator.server.sendSpore(
                 destination, spore.SerializeToString())
+            self.potator.network_dispatcher.hash_cache.append(spore.hash)
 
         # Retry every 5 seconds
         l = task.LoopingCall(looper)
         l.start(5.0)
         self.greeting_loop = l
-        # self.potator.server.sendSpore(destination, spore.SerializeToString())
-        self.potator.network_dispatcher.hash_cache.append(spore.hash)
 
     def sendGreetingAck(self, destination):
         spore = Spore()
