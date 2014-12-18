@@ -43,9 +43,6 @@ class Server(object):
         # Create the factory
         self.factory = NodeFactory(self)
 
-        # Starts the listening server
-        # self.reactor.listenTCP(settings.SERVER_PORT, self.factory)
-
         # Starts Tor and the listening server
         self.tor_launcher = TorLauncher(self)
 
