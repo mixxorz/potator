@@ -36,7 +36,8 @@ class OnionUrlResolutionProtocol(object):
         spore.hash = self._generateHash()
         spore.ourpData.type = OurpData.REPLY
         spore.ourpData.ipAddress = settings.IP_ADDRESS
-        spore.ourpData.onionUrl = settings.ONION_URL
+        spore.ourpData.onionUrl = self.potator.server.tor_launcher.port.getHost(
+        ).onion_uri
         # TODO: There might be a more elegant way of doing this
         self.potator.network_dispatcher.handleDispatch(spore)
 
@@ -48,7 +49,8 @@ class OnionUrlResolutionProtocol(object):
         spore.hash = self._generateHash()
         spore.ourpData.type = OurpData.GREETING
         spore.ourpData.ipAddress = settings.IP_ADDRESS
-        spore.ourpData.onionUrl = settings.ONION_URL
+        spore.ourpData.onionUrl = self.potator.server.tor_launcher.port.getHost(
+        ).onion_uri
         self.potator.server.sendSpore(destination, spore.SerializeToString())
 
     def sendGreetingAck(self, destination):
@@ -57,7 +59,8 @@ class OnionUrlResolutionProtocol(object):
         spore.castType = spore.UNICAST
         spore.ourpData.type = OurpData.GREETING_ACK
         spore.ourpData.ipAddress = settings.IP_ADDRESS
-        spore.ourpData.onionUrl = settings.ONION_URL
+        spore.ourpData.onionUrl = self.potator.server.tor_launcher.port.getHost(
+        ).onion_uri
         self.potator.server.sendSpore(destination, spore.SerializeToString())
 
     def processOurp(self, ourpData):

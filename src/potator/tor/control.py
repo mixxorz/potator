@@ -1,7 +1,7 @@
 import os
 
 import txtorcon
-from twisted.internet import reactor
+from twisted.internet import reactor, defer
 from twisted.python import log
 
 
@@ -9,6 +9,7 @@ class TorLauncher(object):
 
     def __init__(self, factory):
         self.factory = factory
+        self.port = None
         # Tor Configuration
         # TODO: This is only for testing, configure properly for production
         data_directory = os.path.join(os.environ['AppData'], 'potator', '0000')
@@ -32,6 +33,7 @@ class TorLauncher(object):
             progress_updates=self.progress)
         d.addCallback(self.launched).addErrback(self.error)
 
+    @defer.inlineCallbacks
     def launched(self, process_proto):
         log.msg("Tor has launched.")
         hidden_service_dir = os.path.join(
@@ -41,7 +43,7 @@ class TorLauncher(object):
         endpoint = txtorcon.TCPHiddenServiceEndpoint(
             reactor, self.config,
             7701, hidden_service_dir=hidden_service_dir)
-        endpoint.listen(self.factory)
+        self.port = yield endpoint.listen(self.factory)
 
     def error(self, failure):
         log.msg("There was an error", failure.getErrorMessage())
