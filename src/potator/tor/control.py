@@ -13,8 +13,9 @@ class TorLauncher(object):
         self.server = server
         self.port = None
         # Tor Configuration
-        # TODO: This is only for testing, configure properly for production
-        data_directory = os.path.join(os.environ['AppData'], 'potator', '0000')
+        data_directory = os.path.join(
+            os.environ['AppData'], 'potator',
+            self.server.potator.config['NETWORK_ID'])
         try:
             os.mkdir(data_directory)
         except OSError:
@@ -24,6 +25,7 @@ class TorLauncher(object):
         self.config.DataDirectory = data_directory
 
         # For testing tor network
+        # TODO: This is only for testing, configure properly for production
         self.config.TestingTorNetwork = 1
         self.config.DirAuthority = [
             'test000a orport=5000 no-v2 hs v3ident=45A84EC741477462D3189B79C5B8A086683CDD71 192.168.1.144:7000 55023AE790E26D7FD5527FA8D35C51894CAE741E',
