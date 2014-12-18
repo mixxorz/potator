@@ -8,14 +8,12 @@ import win32event
 import win32file
 from impacket import ImpactDecoder
 
-from potator.util import settings
-
 
 class TunInterface(object):
 
     def __init__(self, potator):
-        self.tuntap = openTunTap()
         self.potator = potator
+        self.tuntap = openTunTap(self.potator.config['IP_ADDRESS'])
         self.sent_bytes = 0
         self.received_bytes = 0
 
@@ -39,10 +37,6 @@ class TunInterface(object):
 # IPv4 configuration of your TUN interface (represented as a list of integers)
 # < The IPv4 address of the TUN interface.
 
-if settings.IP_ADDRESS:
-    TUN_IPv4_ADDRESS = [int(x) for x in settings.IP_ADDRESS.split('.')]
-else:
-    TUN_IPv4_ADDRESS = [4, 4, 4, 2]
 
 # < The IPv4 address of the TUN interface's network.
 TUN_IPv4_NETWORK = [4,  0, 0, 0]
@@ -107,13 +101,15 @@ TAP_IOCTL_SET_MEDIA_STATUS = TAP_CONTROL_CODE(6, 0)
 TAP_IOCTL_CONFIG_TUN = TAP_CONTROL_CODE(10, 0)
 
 
-def openTunTap():
+def openTunTap(ip_address):
     '''
     \brief Open a TUN/TAP interface and switch it to TUN mode.
 
     \return The handler of the interface, which can be used for later
         read/write operations.
     '''
+
+    ip_address = [int(x) for x in ip_address.split('.')]
 
     # retrieve the ComponentId from the TUN/TAP interface
     componentId = get_tuntap_ComponentId()
@@ -145,7 +141,7 @@ def openTunTap():
     # - the tun interface's IPv4 network address (4 characters)
     # - the tun interface's IPv4 network mask (4 characters)
     configTunParam = []
-    configTunParam += TUN_IPv4_ADDRESS
+    configTunParam += ip_address
     configTunParam += TUN_IPv4_NETWORK
     configTunParam += TUN_IPv4_NETMASK
     configTunParam = ''.join([chr(b) for b in configTunParam])

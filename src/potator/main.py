@@ -23,6 +23,13 @@ class Potator(object):
         # Purge database at start to test. OURP + database
         self.db.cleandb()
 
+        # Store all configuration in this dictionary
+        self.config = {
+            'IP_ADDRESS': '4.4.4.1',
+            'SOCKS_PORT': 7700,
+            'HIDDEN_SERVICE_PORT': 7701
+        }
+
         self.ourp = OnionUrlResolutionProtocol(self)
         self.network_dispatcher = NetworkDispatcher(self)
         self.ping = PingProtocol(self)
@@ -32,13 +39,6 @@ class Potator(object):
         # self.stats = StatPrinter(server, interface)
 
         reactor.listenTCP(9999, PotatorApiFactory(self))
-
-        # Store all configuration in this dictionary
-        self.config = {
-            'IP_ADDRESS': '4.4.4.1',
-            'SOCKS_PORT': 7700,
-            'HIDDEN_SERVICE_PORT': 7701
-        }
 
     def start(self):
         self.interface.start()
