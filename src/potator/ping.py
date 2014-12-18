@@ -4,7 +4,6 @@ from twisted.internet import reactor
 from twisted.python import log
 
 from .protocol.potator_pb2 import Spore
-from .util import settings
 
 
 class PingProtocol(object):

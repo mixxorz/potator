@@ -1,15 +1,11 @@
-import os
-
 from twisted.internet import defer
 from twisted.internet.endpoints import TCP4ClientEndpoint
 from twisted.internet.protocol import Factory
 from twisted.protocols.basic import NetstringReceiver
 from twisted.python import log
 from txsocksx.client import SOCKS5ClientEndpoint
-from txtorcon import TCPHiddenServiceEndpoint
 
 from .control import TorLauncher
-from potator.util import settings
 
 
 class NodeConnection(NetstringReceiver):
@@ -39,6 +35,7 @@ class NodeFactory(Factory):
 
 class Server(object):
 
+    # TODO: Remove reactor
     def __init__(self, reactor, potator):
         self.reactor = reactor
         self.potator = potator
@@ -50,7 +47,7 @@ class Server(object):
         # self.reactor.listenTCP(settings.SERVER_PORT, self.factory)
 
         # Starts Tor and the listening server
-        self.tor_launcher = TorLauncher(self.factory)
+        self.tor_launcher = TorLauncher(self)
 
     def sendSpore(self, onion_url, spore):
         log.msg('Sending to %s' % onion_url)
@@ -93,10 +90,10 @@ class Server(object):
             host = host.encode('utf-8')
 
         tcp_endpoint = TCP4ClientEndpoint(
-            self.reactor, '127.0.0.1', settings.SOCKS_PORT)
+            self.reactor, '127.0.0.1', self.potator.config['SOCKS_PORT'])
 
         endpoint = SOCKS5ClientEndpoint(
-            host, settings.HIDDEN_SERVICE_PORT, tcp_endpoint)
+            host, self.potator.config['HIDDEN_SERVICE_PORT'], tcp_endpoint)
 
         d = endpoint.connect(self.factory)
         return d

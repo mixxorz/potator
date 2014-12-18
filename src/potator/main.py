@@ -33,6 +33,13 @@ class Potator(object):
 
         reactor.listenTCP(9999, PotatorApiFactory(self))
 
+        # Store all configuration in this dictionary
+        self.config = {
+            'IP_ADDRESS': '4.4.4.1',
+            'SOCKS_PORT': 7700,
+            'HIDDEN_SERVICE_PORT': 7701
+        }
+
     def start(self):
         self.interface.start()
         # self.stats.start()

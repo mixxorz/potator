@@ -198,8 +198,6 @@ class ReadThread(threading.Thread):
 
         rxbuffer = win32file.AllocateReadBuffer(self.ETHERNET_MTU)
 
-        # print TUN_IPv4_ADDRESS
-
         while self.goOn:
 
             # wait for data

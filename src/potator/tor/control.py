@@ -1,5 +1,6 @@
 import glob
 import os
+import sys
 
 import txtorcon
 from twisted.internet import reactor, defer
@@ -8,8 +9,8 @@ from twisted.python import log
 
 class TorLauncher(object):
 
-    def __init__(self, factory):
-        self.factory = factory
+    def __init__(self, server):
+        self.server = server
         self.port = None
         # Tor Configuration
         # TODO: This is only for testing, configure properly for production
@@ -60,8 +61,9 @@ class TorLauncher(object):
         # Starts the listening server
         endpoint = txtorcon.TCPHiddenServiceEndpoint(
             reactor, self.config,
-            7701, hidden_service_dir=hidden_service_dir)
-        self.port = yield endpoint.listen(self.factory)
+            self.server.potator.config['HIDDEN_SERVICE_PORT'],
+            hidden_service_dir=hidden_service_dir)
+        self.port = yield endpoint.listen(self.server.factory)
 
     def error(self, failure):
         log.msg("There was an error", failure.getErrorMessage())
