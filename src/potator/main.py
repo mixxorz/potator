@@ -1,4 +1,5 @@
 import argparse
+import random
 import sys
 
 from impacket import ImpactDecoder
@@ -25,7 +26,9 @@ class Potator(object):
         self.config = {
             'IP_ADDRESS': args.ip_address,
             'NETWORK_ID': args.network_identifier,
-            'SOCKS_PORT': 7700,
+            'SOCKS_PORT': random.randint(49152, 65535),
+            'API_PORT': random.randint(49152, 65535),
+            'CONTROL_PORT': random.randint(49152, 65535),
             'HIDDEN_SERVICE_PORT': 7701
         }
 
@@ -37,7 +40,7 @@ class Potator(object):
         self.interface = TunInterface(self)
         # self.stats = StatPrinter(server, interface)
 
-        reactor.listenTCP(9999, PotatorApiFactory(self))
+        reactor.listenTCP(self.config['API_PORT'], PotatorApiFactory(self))
 
     def start(self):
         self.interface.start()

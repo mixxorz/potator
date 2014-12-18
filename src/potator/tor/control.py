@@ -1,6 +1,5 @@
 import glob
 import os
-import sys
 
 import txtorcon
 from twisted.internet import reactor, defer
@@ -21,7 +20,8 @@ class TorLauncher(object):
         except OSError:
             pass
         self.config = txtorcon.TorConfig()
-        self.config.SocksPort = 7700
+        self.config.SocksPort = self.server.potator.config['SOCKS_PORT']
+        self.config.ControlPort = self.server.potator.config['CONTROL_PORT']
         self.config.DataDirectory = data_directory
 
         # For testing tor network
@@ -57,6 +57,7 @@ class TorLauncher(object):
     @defer.inlineCallbacks
     def launched(self, process_proto):
         log.msg("Tor has launched.")
+        log.msg("SocksPort is on ", self.config.SocksPort)
         hidden_service_dir = os.path.join(
             self.config.DataDirectory, 'hidden_service')
 
