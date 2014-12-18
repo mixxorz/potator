@@ -134,7 +134,7 @@ class OnionIPMapper(object):
         self.mappings = {}
 
     def getOnionUrl(self, ip_address):
-        return self.mappings.get('ip_address')
+        return self.mappings.get(ip_address)
 
     def setOnionUrl(self, ip_address, onion_url):
         self.mappings[ip_address] = onion_url

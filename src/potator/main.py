@@ -1,12 +1,11 @@
 import sys
-from threading import Lock
 
 from impacket import ImpactDecoder
 from twisted.internet import reactor
 from twisted.python import log
 
 from .api import PotatorApiFactory
-from .database import Database
+from .database import OnionIPMapper
 from .network_dispatcher import NetworkDispatcher
 from .ourp import OnionUrlResolutionProtocol
 from .ping import PingProtocol
@@ -19,9 +18,7 @@ class Potator(object):
 
     def __init__(self):
         log.startLogging(sys.stdout)
-        self.db = Database(Lock())
-        # Purge database at start to test. OURP + database
-        self.db.cleandb()
+        self.db = OnionIPMapper()
 
         # Store all configuration in this dictionary
         self.config = {
@@ -80,10 +77,7 @@ class Potator(object):
 
             # TODO: Group number must not be static
             # TODO: Consider in memory database for better performance
-            destination_onion_url = self.db.getOnionUrl(
-                packet.get_ip_dst(),
-                1
-            )
+            destination_onion_url = self.db.getOnionUrl(packet.get_ip_dst())
 
             if destination_onion_url:
                 self.server.sendSpore(

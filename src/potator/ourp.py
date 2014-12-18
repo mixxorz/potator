@@ -72,16 +72,13 @@ class OnionUrlResolutionProtocol(object):
         elif ourpData.type == OurpData.REPLY:
             log.msg('Received OURP Reply')
 
-            self.potator.db.setOnionUrl(
-                ourpData.ipAddress, ourpData.onionUrl, 1)
+            self.potator.db.setOnionUrl(ourpData.ipAddress, ourpData.onionUrl)
 
         elif ourpData.type == OurpData.GREETING:
             log.msg('Received OURP Greeting')
-            # TODO: Check password and group ID
-            # TODO: Don't just use '1' for group id
+            # TODO: Check password
             # Save client's data
-            self.potator.db.setOnionUrl(
-                ourpData.ipAddress, ourpData.onionUrl, 1)
+            self.potator.db.setOnionUrl(ourpData.ipAddress, ourpData.onionUrl)
             # Send greeting acknowledge
             self.sendGreetingAck(ourpData.onionUrl)
 
@@ -91,8 +88,7 @@ class OnionUrlResolutionProtocol(object):
             if self.time_greeting_sent:
                 log.msg('ACK LAP: %s' % (now - self.time_greeting_sent))
             self.time_greeting_ack_laps.append(now)
-            self.potator.db.setOnionUrl(
-                ourpData.ipAddress, ourpData.onionUrl, 1)
+            self.potator.db.setOnionUrl(ourpData.ipAddress, ourpData.onionUrl)
         else:
             # Error
             pass
