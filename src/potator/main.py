@@ -25,7 +25,7 @@ class Potator(object):
 
         # Store all configuration in this dictionary
         self.config = {
-            'IP_ADDRESS': '4.4.4.1',
+            'IP_ADDRESS': sys.argv[1],
             'SOCKS_PORT': 7700,
             'HIDDEN_SERVICE_PORT': 7701
         }
