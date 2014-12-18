@@ -38,8 +38,8 @@ class TorLauncher(object):
         # TODO: REFRACTOR
         tor_binary = None
         globs = (
-            'C:\\Program Files\\Tor',
-            'C:\\Program Files (x86)\\Tor',
+            'C:\\Program Files\\Tor\\',
+            'C:\\Program Files (x86)\\Tor\\',
         )
         for pattern in globs:
             for path in glob.glob(pattern):
