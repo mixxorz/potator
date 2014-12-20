@@ -56,6 +56,16 @@ class PotatorApiProtocol(basic.LineReceiver):
         else:
             self.factory.potator.ourp.sendGreeting(onion_url)
 
+    def do_setconf(self, *args):
+        '''Sets a configuration value'''
+
+        try:
+            name = args[0]
+            value = args[1]
+            self.factory.potator.config[name] = value
+        except IndexError:
+            self.do_help('setconf')
+
     def do_ping(self, *args):
         '''Sends an internal ping to onion_url'''
         onion_url = args[0]

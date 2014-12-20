@@ -4,7 +4,6 @@ from twisted.internet import reactor
 from twisted.python import log
 
 from .protocol.potator_pb2 import Spore
-from .util import settings
 
 
 class PingProtocol(object):
@@ -24,7 +23,8 @@ class PingProtocol(object):
         spore.castType = spore.UNICAST
         spore.ping.data = 'abcdefghijklmnopqrstuvwxyz1234567890'
         spore.ping.reply = reply
-        spore.ping.source = settings.ONION_URL
+        spore.ping.source = self.potator.server.tor_launcher.port.getHost(
+        ).onion_uri
         self.waiting = True
         self.time_buffer = time.time()
         self.potator.server.sendSpore(destination, spore.SerializeToString())

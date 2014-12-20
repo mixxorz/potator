@@ -8,14 +8,12 @@ import win32event
 import win32file
 from impacket import ImpactDecoder
 
-from potator.util import settings
-
 
 class TunInterface(object):
 
     def __init__(self, potator):
-        self.tuntap = openTunTap()
         self.potator = potator
+        self.tuntap = openTunTap(self.potator.config['IP_ADDRESS'])
         self.sent_bytes = 0
         self.received_bytes = 0
 
@@ -39,10 +37,6 @@ class TunInterface(object):
 # IPv4 configuration of your TUN interface (represented as a list of integers)
 # < The IPv4 address of the TUN interface.
 
-if settings.IP_ADDRESS:
-    TUN_IPv4_ADDRESS = [int(x) for x in settings.IP_ADDRESS.split('.')]
-else:
-    TUN_IPv4_ADDRESS = [4, 4, 4, 2]
 
 # < The IPv4 address of the TUN interface's network.
 TUN_IPv4_NETWORK = [4,  0, 0, 0]
@@ -64,7 +58,7 @@ TUNTAP_COMPONENT_ID = 'tap0901'
 #=== tun/tap-related functions
 
 
-def get_tuntap_ComponentId():
+def get_tuntap_ComponentId(number=0):
     '''
     \brief Retrieve the instance ID of the TUN/TAP interface from the Windows
         registry,
@@ -78,6 +72,7 @@ def get_tuntap_ComponentId():
     \return The 'ComponentId' associated with the TUN/TAP interface, a string
         of the form "{A9A413D7-4D1C-47BA-A3A9-92F091828881}".
     '''
+    instances = []
     with reg.OpenKey(reg.HKEY_LOCAL_MACHINE, ADAPTER_KEY) as adapters:
         try:
             for i in xrange(10000):
@@ -87,13 +82,18 @@ def get_tuntap_ComponentId():
                         component_id = reg.QueryValueEx(
                             adapter, 'ComponentId')[0]
                         if component_id == TUNTAP_COMPONENT_ID:
-                            return reg.QueryValueEx(
+                            instances.append(reg.QueryValueEx(
                                 adapter, 'NetCfgInstanceId'
-                            )[0]
+                            )[0])
                     except WindowsError:
                         pass
         except WindowsError:
             pass
+
+    try:
+        return instances[number]
+    except IndexError, e:
+        raise e
 
 
 def CTL_CODE(device_type, function, method, access):
@@ -107,7 +107,7 @@ TAP_IOCTL_SET_MEDIA_STATUS = TAP_CONTROL_CODE(6, 0)
 TAP_IOCTL_CONFIG_TUN = TAP_CONTROL_CODE(10, 0)
 
 
-def openTunTap():
+def openTunTap(ip_address):
     '''
     \brief Open a TUN/TAP interface and switch it to TUN mode.
 
@@ -115,20 +115,43 @@ def openTunTap():
         read/write operations.
     '''
 
+    ip_address = [int(x) for x in ip_address.split('.')]
+
     # retrieve the ComponentId from the TUN/TAP interface
-    componentId = get_tuntap_ComponentId()
+    # componentId = get_tuntap_ComponentId()
     # print('componentId = {0}'.format(componentId))
 
     # create a win32file for manipulating the TUN/TAP interface
-    tuntap = win32file.CreateFile(
-        r'\\.\Global\%s.tap' % componentId,
-        win32file.GENERIC_READ | win32file.GENERIC_WRITE,
-        win32file.FILE_SHARE_READ | win32file.FILE_SHARE_WRITE,
-        None,
-        win32file.OPEN_EXISTING,
-        win32file.FILE_ATTRIBUTE_SYSTEM | win32file.FILE_FLAG_OVERLAPPED,
-        None
-    )
+    # tuntap = win32file.CreateFile(
+    #     r'\\.\Global\%s.tap' % componentId,
+    #     win32file.GENERIC_READ | win32file.GENERIC_WRITE,
+    #     win32file.FILE_SHARE_READ | win32file.FILE_SHARE_WRITE,
+    #     None,
+    #     win32file.OPEN_EXISTING,
+    #     win32file.FILE_ATTRIBUTE_SYSTEM | win32file.FILE_FLAG_OVERLAPPED,
+    #     None
+    # )
+
+    for number in range(0, 10):
+        # retrieve the ComponentId from the TUN/TAP interface
+        componentId = get_tuntap_ComponentId(number)
+
+        # This will fail if already attached
+        # create a win32file for manipulating the TUN/TAP interface\
+        try:
+            tuntap = win32file.CreateFile(
+                r'\\.\Global\%s.tap' % componentId,
+                win32file.GENERIC_READ | win32file.GENERIC_WRITE,
+                win32file.FILE_SHARE_READ | win32file.FILE_SHARE_WRITE,
+                None,
+                win32file.OPEN_EXISTING,
+                win32file.FILE_ATTRIBUTE_SYSTEM | win32file.FILE_FLAG_OVERLAPPED,
+                None
+            )
+            break
+        except:
+            continue
+
     # print('tuntap      = {0}'.format(tuntap.handle))
 
     # have Windows consider the interface now connected
@@ -145,7 +168,7 @@ def openTunTap():
     # - the tun interface's IPv4 network address (4 characters)
     # - the tun interface's IPv4 network mask (4 characters)
     configTunParam = []
-    configTunParam += TUN_IPv4_ADDRESS
+    configTunParam += ip_address
     configTunParam += TUN_IPv4_NETWORK
     configTunParam += TUN_IPv4_NETMASK
     configTunParam = ''.join([chr(b) for b in configTunParam])
@@ -198,8 +221,6 @@ class ReadThread(threading.Thread):
 
         rxbuffer = win32file.AllocateReadBuffer(self.ETHERNET_MTU)
 
-        # print TUN_IPv4_ADDRESS
-
         while self.goOn:
 
             # wait for data
@@ -226,25 +247,6 @@ class ReadThread(threading.Thread):
 
     def close(self):
         self.goOn = False
-
-
-class Transmitter(object):
-
-    def __init__(self, tuntap):
-
-        self.tuntap = tuntap
-        self.goOn = True
-        self.overlappedTx = pywintypes.OVERLAPPED()
-        self.overlappedTx.hEvent = win32event.CreateEvent(None, 0, 0, None)
-
-    def transmit(self, dataToTransmit):
-
-        # write over tuntap interface
-        win32file.WriteFile(self.tuntap, dataToTransmit, self.overlappedTx)
-        win32event.WaitForSingleObject(
-            self.overlappedTx.hEvent, win32event.INFINITE)
-        self.overlappedTx.Offset = self.overlappedTx.Offset + \
-            len(dataToTransmit)
 
 
 class WriteThread(threading.Thread):

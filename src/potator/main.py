@@ -1,12 +1,13 @@
+import argparse
+import random
 import sys
-from threading import Lock
 
 from impacket import ImpactDecoder
 from twisted.internet import reactor
 from twisted.python import log
 
 from .api import PotatorApiFactory
-from .database import Database
+from .database import OnionIPMapper
 from .network_dispatcher import NetworkDispatcher
 from .ourp import OnionUrlResolutionProtocol
 from .ping import PingProtocol
@@ -17,11 +18,19 @@ from .tuntap.tuntap import TunInterface
 
 class Potator(object):
 
-    def __init__(self):
+    def __init__(self, args):
         log.startLogging(sys.stdout)
-        self.db = Database(Lock())
-        # Purge database at start to test. OURP + database
-        self.db.cleandb()
+        self.db = OnionIPMapper()
+
+        # Store all configuration in this dictionary
+        self.config = {
+            'IP_ADDRESS': args.ip_address,
+            'NETWORK_ID': args.network_identifier,
+            'SOCKS_PORT': random.randint(49152, 65535),
+            'API_PORT': random.randint(49152, 65535),
+            'CONTROL_PORT': random.randint(49152, 65535),
+            'HIDDEN_SERVICE_PORT': 7701
+        }
 
         self.ourp = OnionUrlResolutionProtocol(self)
         self.network_dispatcher = NetworkDispatcher(self)
@@ -31,7 +40,7 @@ class Potator(object):
         self.interface = TunInterface(self)
         # self.stats = StatPrinter(server, interface)
 
-        reactor.listenTCP(9999, PotatorApiFactory(self))
+        reactor.listenTCP(self.config['API_PORT'], PotatorApiFactory(self))
 
     def start(self):
         self.interface.start()
@@ -62,31 +71,36 @@ class Potator(object):
 
     def outgoingCallback(self, packet):
         # TODO: For testing only. Filtering out unwanted packets.
-        if '4.4.4' in packet.get_ip_dst():
-            self.interface.sent_bytes += packet.get_size()
+        # if '4.4.4' in packet.get_ip_dst():
+        self.interface.sent_bytes += packet.get_size()
 
-            spore = Spore()
-            spore.dataType = spore.IP
-            spore.castType = spore.UNICAST
-            spore.ipData.destinationAddress = packet.get_ip_dst()
-            spore.ipData.data = packet.get_packet()
+        spore = Spore()
+        spore.dataType = spore.IP
+        spore.castType = spore.UNICAST
+        spore.ipData.destinationAddress = packet.get_ip_dst()
+        spore.ipData.data = packet.get_packet()
 
-            # TODO: Group number must not be static
-            # TODO: Consider in memory database for better performance
-            destination_onion_url = self.db.getOnionUrl(
-                packet.get_ip_dst(),
-                1
-            )
+        # TODO: Group number must not be static
+        # TODO: Consider in memory database for better performance
+        destination_onion_url = self.db.getOnionUrl(packet.get_ip_dst())
 
-            if destination_onion_url:
-                self.server.sendSpore(
-                    destination_onion_url, spore.SerializeToString())
-            else:
-                self.ourp.sendRequest(packet.get_ip_dst())
+        if destination_onion_url:
+            self.server.sendSpore(
+                destination_onion_url, spore.SerializeToString())
+        else:
+            self.ourp.sendRequest(packet.get_ip_dst())
 
 
 def main():
-    app = Potator()
+    parser = argparse.ArgumentParser(description='Potator v0.1')
+    parser.add_argument(
+        'ip_address',
+        help='IP address that will be set for this Potator client.')
+    parser.add_argument(
+        'network_identifier',
+        help='A string that identifies this instance of Potator.')
+
+    app = Potator(parser.parse_args())
 
     try:
         app.start()
