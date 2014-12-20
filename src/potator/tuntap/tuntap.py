@@ -6,6 +6,7 @@ from Queue import Queue
 import pywintypes
 import win32event
 import win32file
+import ipaddr
 from impacket import ImpactDecoder
 
 
@@ -32,30 +33,10 @@ class TunInterface(object):
         win32file.CloseHandle(self.tuntap)
 
 
-#============================ defines =========================================
-
-# IPv4 configuration of your TUN interface (represented as a list of integers)
-# < The IPv4 address of the TUN interface.
-
-
-# < The IPv4 address of the TUN interface's network.
-TUN_IPv4_NETWORK = [4,  0, 0, 0]
-# < The IPv4 netmask of the TUN interface.
-TUN_IPv4_NETMASK = [255, 0, 0, 0]
-
-# Key in the Windows registry where to find all network interfaces (don't
-# change, this is always the same)
 ADAPTER_KEY = r'SYSTEM\CurrentControlSet\Control\Class\{4D36E972-E325-11CE-BFC1-08002BE10318}'
 
-# Value of the ComponentId key in the registry corresponding to your TUN
-# interface.
+
 TUNTAP_COMPONENT_ID = 'tap0901'
-
-#======================= external commands ====================================
-
-#============================ helpers =========================================
-
-#=== tun/tap-related functions
 
 
 def get_tuntap_ComponentId(number=0):
@@ -115,23 +96,6 @@ def openTunTap(ip_address):
         read/write operations.
     '''
 
-    ip_address = [int(x) for x in ip_address.split('.')]
-
-    # retrieve the ComponentId from the TUN/TAP interface
-    # componentId = get_tuntap_ComponentId()
-    # print('componentId = {0}'.format(componentId))
-
-    # create a win32file for manipulating the TUN/TAP interface
-    # tuntap = win32file.CreateFile(
-    #     r'\\.\Global\%s.tap' % componentId,
-    #     win32file.GENERIC_READ | win32file.GENERIC_WRITE,
-    #     win32file.FILE_SHARE_READ | win32file.FILE_SHARE_WRITE,
-    #     None,
-    #     win32file.OPEN_EXISTING,
-    #     win32file.FILE_ATTRIBUTE_SYSTEM | win32file.FILE_FLAG_OVERLAPPED,
-    #     None
-    # )
-
     for number in range(0, 10):
         # retrieve the ComponentId from the TUN/TAP interface
         componentId = get_tuntap_ComponentId(number)
@@ -167,8 +131,14 @@ def openTunTap(ip_address):
     # - the tun interface's IPv4 address (4 characters)
     # - the tun interface's IPv4 network address (4 characters)
     # - the tun interface's IPv4 network mask (4 characters)
+
+    ip_address = ipaddr.IPv4Network(ip_address)
+    TUN_IPv4_ADDRESS = [int(x) for x in str(ip_address.ip).split('.')]
+    TUN_IPv4_NETWORK = [int(x) for x in str(ip_address.network).split('.')]
+    TUN_IPv4_NETMASK = [int(x) for x in str(ip_address.netmask).split('.')]
+
     configTunParam = []
-    configTunParam += ip_address
+    configTunParam += TUN_IPv4_ADDRESS
     configTunParam += TUN_IPv4_NETWORK
     configTunParam += TUN_IPv4_NETMASK
     configTunParam = ''.join([chr(b) for b in configTunParam])

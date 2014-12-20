@@ -95,10 +95,10 @@ def main():
     parser = argparse.ArgumentParser(description='Potator v0.1')
     parser.add_argument(
         'ip_address',
-        help='IP address that will be set for this Potator client.')
+        help='An IP address in CIDR notation (e.g. 4.4.4.1/8) to be used.')
     parser.add_argument(
         'network_identifier',
-        help='A string that identifies this instance of Potator.')
+        help='A name for this Potator network.')
 
     app = Potator(parser.parse_args())
 
