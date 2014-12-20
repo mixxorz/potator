@@ -5,3 +5,4 @@ txsocksx==1.13.0.3
 zope.interface==4.1.1
 protobuf==2.6.0
 txtorcon==0.11.0
+ipaddr==2.1.11
