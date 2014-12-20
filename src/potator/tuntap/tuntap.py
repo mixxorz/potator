@@ -14,7 +14,7 @@ class TunInterface(object):
 
     def __init__(self, potator):
         self.potator = potator
-        self.tuntap = openTunTap(self.potator.config['IP_ADDRESS'])
+        self.tuntap = self._openTunTap()
         self.sent_bytes = 0
         self.received_bytes = 0
 
@@ -32,11 +32,78 @@ class TunInterface(object):
         self.writeThread.close()
         win32file.CloseHandle(self.tuntap)
 
+    def _openTunTap(self):
+        '''
+        \brief Open a TUN/TAP interface and switch it to TUN mode.
+
+        \return The handler of the interface, which can be used for later
+            read/write operations.
+        '''
+
+        tuntap, componentId = get_available_tuntap_device()
+
+        # Rename interface
+        connection_key = INSTANCE_KEY + '\\' + componentId + '\\Connection'
+        with reg.OpenKey(reg.HKEY_LOCAL_MACHINE, connection_key, 0,
+                         reg.KEY_ALL_ACCESS) as instance:
+            reg.SetValueEx(
+                instance, 'Name', 0, reg.REG_SZ,
+                self.potator.config['NETWORK_ID'])
+            print 'Using interface', reg.QueryValueEx(instance, 'Name')[0]
+
+        # have Windows consider the interface now connected
+        win32file.DeviceIoControl(
+            tuntap,
+            TAP_IOCTL_SET_MEDIA_STATUS,
+            '\x01\x00\x00\x00',
+            None
+        )
+
+        # prepare the parameter passed to the TAP_IOCTL_CONFIG_TUN commmand.
+        # This needs to be a 12-character long string representing
+        # - the tun interface's IPv4 address (4 characters)
+        # - the tun interface's IPv4 network address (4 characters)
+        # - the tun interface's IPv4 network mask (4 characters)
+
+        ip_address = ipaddr.IPv4Network(self.potator.config['IP_ADDRESS'])
+        TUN_IPv4_ADDRESS = [int(x) for x in str(ip_address.ip).split('.')]
+        TUN_IPv4_NETWORK = [int(x) for x in str(ip_address.network).split('.')]
+        TUN_IPv4_NETMASK = [int(x) for x in str(ip_address.netmask).split('.')]
+
+        configTunParam = []
+        configTunParam += TUN_IPv4_ADDRESS
+        configTunParam += TUN_IPv4_NETWORK
+        configTunParam += TUN_IPv4_NETMASK
+        configTunParam = ''.join([chr(b) for b in configTunParam])
+
+        # switch to TUN mode (by default the interface runs in TAP mode)
+        win32file.DeviceIoControl(
+            tuntap,
+            TAP_IOCTL_CONFIG_TUN,
+            configTunParam,
+            None
+        )
+
+        # return the handler of the TUN interface
+        return tuntap
+
 
 ADAPTER_KEY = r'SYSTEM\CurrentControlSet\Control\Class\{4D36E972-E325-11CE-BFC1-08002BE10318}'
+INSTANCE_KEY = r'SYSTEM\CurrentControlSet\Control\Network\{4D36E972-E325-11CE-BFC1-08002BE10318}'
 
 
 TUNTAP_COMPONENT_ID = 'tap0901'
+
+
+def CTL_CODE(device_type, function, method, access):
+    return (device_type << 16) | (access << 14) | (function << 2) | method
+
+
+def TAP_CONTROL_CODE(request, method):
+    return CTL_CODE(34, request, method, 0)
+
+TAP_IOCTL_SET_MEDIA_STATUS = TAP_CONTROL_CODE(6, 0)
+TAP_IOCTL_CONFIG_TUN = TAP_CONTROL_CODE(10, 0)
 
 
 def get_tuntap_ComponentId(number=0):
@@ -73,29 +140,11 @@ def get_tuntap_ComponentId(number=0):
 
     try:
         return instances[number]
-    except IndexError, e:
-        raise e
+    except IndexError:
+        raise Exception('Could not find available tuntap adapter.')
 
 
-def CTL_CODE(device_type, function, method, access):
-    return (device_type << 16) | (access << 14) | (function << 2) | method
-
-
-def TAP_CONTROL_CODE(request, method):
-    return CTL_CODE(34, request, method, 0)
-
-TAP_IOCTL_SET_MEDIA_STATUS = TAP_CONTROL_CODE(6, 0)
-TAP_IOCTL_CONFIG_TUN = TAP_CONTROL_CODE(10, 0)
-
-
-def openTunTap(ip_address):
-    '''
-    \brief Open a TUN/TAP interface and switch it to TUN mode.
-
-    \return The handler of the interface, which can be used for later
-        read/write operations.
-    '''
-
+def get_available_tuntap_device():
     for number in range(0, 10):
         # retrieve the ComponentId from the TUN/TAP interface
         componentId = get_tuntap_ComponentId(number)
@@ -112,47 +161,9 @@ def openTunTap(ip_address):
                 win32file.FILE_ATTRIBUTE_SYSTEM | win32file.FILE_FLAG_OVERLAPPED,
                 None
             )
-            break
+            return tuntap, componentId
         except:
             continue
-
-    # print('tuntap      = {0}'.format(tuntap.handle))
-
-    # have Windows consider the interface now connected
-    win32file.DeviceIoControl(
-        tuntap,
-        TAP_IOCTL_SET_MEDIA_STATUS,
-        '\x01\x00\x00\x00',
-        None
-    )
-
-    # prepare the parameter passed to the TAP_IOCTL_CONFIG_TUN commmand.
-    # This needs to be a 12-character long string representing
-    # - the tun interface's IPv4 address (4 characters)
-    # - the tun interface's IPv4 network address (4 characters)
-    # - the tun interface's IPv4 network mask (4 characters)
-
-    ip_address = ipaddr.IPv4Network(ip_address)
-    TUN_IPv4_ADDRESS = [int(x) for x in str(ip_address.ip).split('.')]
-    TUN_IPv4_NETWORK = [int(x) for x in str(ip_address.network).split('.')]
-    TUN_IPv4_NETMASK = [int(x) for x in str(ip_address.netmask).split('.')]
-
-    configTunParam = []
-    configTunParam += TUN_IPv4_ADDRESS
-    configTunParam += TUN_IPv4_NETWORK
-    configTunParam += TUN_IPv4_NETMASK
-    configTunParam = ''.join([chr(b) for b in configTunParam])
-
-    # switch to TUN mode (by default the interface runs in TAP mode)
-    win32file.DeviceIoControl(
-        tuntap,
-        TAP_IOCTL_CONFIG_TUN,
-        configTunParam,
-        None
-    )
-
-    # return the handler of the TUN interface
-    return tuntap
 
 
 #============================ threads =========================================
