@@ -41,10 +41,10 @@ class TunInterface(object):
             read/write operations.
         '''
 
-        componentId = get_available_tuntap_ComponentId()
+        interface = get_available_tuntap_interface()
 
         tuntap = win32file.CreateFile(
-            r'\\.\Global\%s.tap' % componentId,
+            r'\\.\Global\%s.tap' % interface.SettingID,
             win32file.GENERIC_READ | win32file.GENERIC_WRITE,
             win32file.FILE_SHARE_READ | win32file.FILE_SHARE_WRITE,
             None,
@@ -54,7 +54,7 @@ class TunInterface(object):
         )
 
         # Rename interface
-        connection_key = INSTANCE_KEY + '\\' + componentId + '\\Connection'
+        connection_key = INSTANCE_KEY + '\\' + interface.SettingID + '\\Connection'
         with reg.OpenKey(reg.HKEY_LOCAL_MACHINE, connection_key, 0,
                          reg.KEY_ALL_ACCESS) as instance:
             reg.SetValueEx(
@@ -95,6 +95,9 @@ class TunInterface(object):
             None
         )
 
+        # Set the IP address and Subnet mask statically
+        interface.EnableStatic(IPAddress=[unicode(ip_address.ip)], SubnetMask=[unicode(ip_address.netmask)])
+
         # return the handler of the TUN interface
         return tuntap
 
@@ -117,12 +120,12 @@ TAP_IOCTL_SET_MEDIA_STATUS = TAP_CONTROL_CODE(6, 0)
 TAP_IOCTL_CONFIG_TUN = TAP_CONTROL_CODE(10, 0)
 
 
-def get_available_tuntap_ComponentId():
+def get_available_tuntap_interface():
     nic_configs = wmi.WMI().Win32_NetworkAdapterConfiguration()
     for interface in nic_configs:
         if interface.ServiceName == 'tap0901':
             if not interface.IPEnabled:
-                return interface.SettingID
+                return interface
 
     raise Exception("No available TAP-Windows adapter")
 
