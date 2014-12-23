@@ -1,99 +1,138 @@
 import _winreg as reg
 import threading
-from struct import unpack
 from Queue import Queue
+from struct import unpack
 
+import ipaddr
+import pythoncom
 import pywintypes
 import win32event
 import win32file
+import wmi
 from impacket import ImpactDecoder
+from twisted.internet import defer, task, threads, reactor
 
 
 class TunInterface(object):
 
     def __init__(self, potator):
         self.potator = potator
-        self.tuntap = openTunTap(self.potator.config['IP_ADDRESS'])
+
         self.sent_bytes = 0
         self.received_bytes = 0
 
-        self.readThread = ReadThread(self.tuntap, self)
-        self.writeThread = WriteThread(self.tuntap, self)
+        self.readThread = ReadThread(self)
+        self.writeThread = WriteThread(self)
+        self.started = False
+        self.failed = False
 
         self.writeBuffer = Queue()
 
-    def start(self):
-        self.readThread.start()
-        self.writeThread.start()
+        self._runner_loop = task.LoopingCall(self._runner)
+        self._runner_loop.start(5.0)
 
     def stop(self):
-        self.readThread.close()
-        self.writeThread.close()
-        win32file.CloseHandle(self.tuntap)
-
-
-#============================ defines =========================================
-
-# IPv4 configuration of your TUN interface (represented as a list of integers)
-# < The IPv4 address of the TUN interface.
-
-
-# < The IPv4 address of the TUN interface's network.
-TUN_IPv4_NETWORK = [4,  0, 0, 0]
-# < The IPv4 netmask of the TUN interface.
-TUN_IPv4_NETMASK = [255, 0, 0, 0]
-
-# Key in the Windows registry where to find all network interfaces (don't
-# change, this is always the same)
-ADAPTER_KEY = r'SYSTEM\CurrentControlSet\Control\Class\{4D36E972-E325-11CE-BFC1-08002BE10318}'
-
-# Value of the ComponentId key in the registry corresponding to your TUN
-# interface.
-TUNTAP_COMPONENT_ID = 'tap0901'
-
-#======================= external commands ====================================
-
-#============================ helpers =========================================
-
-#=== tun/tap-related functions
-
-
-def get_tuntap_ComponentId(number=0):
-    '''
-    \brief Retrieve the instance ID of the TUN/TAP interface from the Windows
-        registry,
-
-    This function loops through all the sub-entries at the following location
-    in the Windows registry: reg.HKEY_LOCAL_MACHINE, ADAPTER_KEY
-
-    It looks for one which has the 'ComponentId' key set to
-    TUNTAP_COMPONENT_ID, and returns the value of the 'NetCfgInstanceId' key.
-
-    \return The 'ComponentId' associated with the TUN/TAP interface, a string
-        of the form "{A9A413D7-4D1C-47BA-A3A9-92F091828881}".
-    '''
-    instances = []
-    with reg.OpenKey(reg.HKEY_LOCAL_MACHINE, ADAPTER_KEY) as adapters:
         try:
-            for i in xrange(10000):
-                key_name = reg.EnumKey(adapters, i)
-                with reg.OpenKey(adapters, key_name) as adapter:
-                    try:
-                        component_id = reg.QueryValueEx(
-                            adapter, 'ComponentId')[0]
-                        if component_id == TUNTAP_COMPONENT_ID:
-                            instances.append(reg.QueryValueEx(
-                                adapter, 'NetCfgInstanceId'
-                            )[0])
-                    except WindowsError:
-                        pass
-        except WindowsError:
+            self.readThread.close()
+            self.writeThread.close()
+            win32file.CloseHandle(self.tuntap)
+        except Exception:
             pass
 
-    try:
-        return instances[number]
-    except IndexError, e:
-        raise e
+    @defer.inlineCallbacks
+    def _runner(self):
+        if not self.readThread.goOn or not self.writeThread.goOn:
+            self.failed = True
+
+        if self.failed or not self.started:
+            self.started = True
+            self.failed = False
+            self.stop()
+
+            try:
+                self.tuntap = yield threads.deferToThread(self._openTunTap)
+            except Exception, e:
+                print 'ERROR:', e
+                reactor.stop()
+            self.readThread = ReadThread(self)
+            self.writeThread = WriteThread(self)
+            self.readThread.daemon = True
+            self.writeThread.daemon = True
+            self.readThread.start()
+            self.writeThread.start()
+
+    def _openTunTap(self):
+        pythoncom.CoInitialize()
+
+        interface = get_available_tuntap_interface()
+
+        tuntap = win32file.CreateFile(
+            r'\\.\Global\%s.tap' % interface.SettingID,
+            win32file.GENERIC_READ | win32file.GENERIC_WRITE,
+            win32file.FILE_SHARE_READ | win32file.FILE_SHARE_WRITE,
+            None,
+            win32file.OPEN_EXISTING,
+            win32file.FILE_ATTRIBUTE_SYSTEM | win32file.FILE_FLAG_OVERLAPPED,
+            None
+        )
+
+        # Rename interface
+        connection_key = INSTANCE_KEY + '\\' + \
+            interface.SettingID + '\\Connection'
+        with reg.OpenKey(reg.HKEY_LOCAL_MACHINE, connection_key, 0,
+                         reg.KEY_ALL_ACCESS) as instance:
+            reg.SetValueEx(
+                instance, 'Name', 0, reg.REG_SZ,
+                self.potator.config['NETWORK_ID'])
+            print 'Using interface', reg.QueryValueEx(instance, 'Name')[0]
+
+        # have Windows consider the interface now connected
+        win32file.DeviceIoControl(
+            tuntap,
+            TAP_IOCTL_SET_MEDIA_STATUS,
+            '\x01\x00\x00\x00',
+            None
+        )
+
+        # prepare the parameter passed to the TAP_IOCTL_CONFIG_TUN commmand.
+        # This needs to be a 12-character long string representing
+        # - the tun interface's IPv4 address (4 characters)
+        # - the tun interface's IPv4 network address (4 characters)
+        # - the tun interface's IPv4 network mask (4 characters)
+
+        ip_address = ipaddr.IPv4Network(self.potator.config['IP_ADDRESS'])
+        TUN_IPv4_ADDRESS = [int(x) for x in str(ip_address.ip).split('.')]
+        TUN_IPv4_NETWORK = [int(x) for x in str(ip_address.network).split('.')]
+        TUN_IPv4_NETMASK = [int(x) for x in str(ip_address.netmask).split('.')]
+
+        configTunParam = []
+        configTunParam += TUN_IPv4_ADDRESS
+        configTunParam += TUN_IPv4_NETWORK
+        configTunParam += TUN_IPv4_NETMASK
+        configTunParam = ''.join([chr(b) for b in configTunParam])
+
+        # switch to TUN mode (by default the interface runs in TAP mode)
+        win32file.DeviceIoControl(
+            tuntap,
+            TAP_IOCTL_CONFIG_TUN,
+            configTunParam,
+            None
+        )
+
+        # Set the IP address and Subnet mask statically
+        interface.EnableStatic(
+            IPAddress=[unicode(ip_address.ip)],
+            SubnetMask=[unicode(ip_address.netmask)])
+
+        # return the handler of the TUN interface
+        return tuntap
+
+
+ADAPTER_KEY = r'SYSTEM\CurrentControlSet\Control\Class\{4D36E972-E325-11CE-BFC1-08002BE10318}'
+INSTANCE_KEY = r'SYSTEM\CurrentControlSet\Control\Network\{4D36E972-E325-11CE-BFC1-08002BE10318}'
+
+
+TUNTAP_COMPONENT_ID = 'tap0901'
 
 
 def CTL_CODE(device_type, function, method, access):
@@ -107,82 +146,14 @@ TAP_IOCTL_SET_MEDIA_STATUS = TAP_CONTROL_CODE(6, 0)
 TAP_IOCTL_CONFIG_TUN = TAP_CONTROL_CODE(10, 0)
 
 
-def openTunTap(ip_address):
-    '''
-    \brief Open a TUN/TAP interface and switch it to TUN mode.
+def get_available_tuntap_interface():
+    nic_configs = wmi.WMI().Win32_NetworkAdapterConfiguration()
+    for interface in nic_configs:
+        if interface.ServiceName == 'tap0901':
+            if not interface.IPEnabled:
+                return interface
 
-    \return The handler of the interface, which can be used for later
-        read/write operations.
-    '''
-
-    ip_address = [int(x) for x in ip_address.split('.')]
-
-    # retrieve the ComponentId from the TUN/TAP interface
-    # componentId = get_tuntap_ComponentId()
-    # print('componentId = {0}'.format(componentId))
-
-    # create a win32file for manipulating the TUN/TAP interface
-    # tuntap = win32file.CreateFile(
-    #     r'\\.\Global\%s.tap' % componentId,
-    #     win32file.GENERIC_READ | win32file.GENERIC_WRITE,
-    #     win32file.FILE_SHARE_READ | win32file.FILE_SHARE_WRITE,
-    #     None,
-    #     win32file.OPEN_EXISTING,
-    #     win32file.FILE_ATTRIBUTE_SYSTEM | win32file.FILE_FLAG_OVERLAPPED,
-    #     None
-    # )
-
-    for number in range(0, 10):
-        # retrieve the ComponentId from the TUN/TAP interface
-        componentId = get_tuntap_ComponentId(number)
-
-        # This will fail if already attached
-        # create a win32file for manipulating the TUN/TAP interface\
-        try:
-            tuntap = win32file.CreateFile(
-                r'\\.\Global\%s.tap' % componentId,
-                win32file.GENERIC_READ | win32file.GENERIC_WRITE,
-                win32file.FILE_SHARE_READ | win32file.FILE_SHARE_WRITE,
-                None,
-                win32file.OPEN_EXISTING,
-                win32file.FILE_ATTRIBUTE_SYSTEM | win32file.FILE_FLAG_OVERLAPPED,
-                None
-            )
-            break
-        except:
-            continue
-
-    # print('tuntap      = {0}'.format(tuntap.handle))
-
-    # have Windows consider the interface now connected
-    win32file.DeviceIoControl(
-        tuntap,
-        TAP_IOCTL_SET_MEDIA_STATUS,
-        '\x01\x00\x00\x00',
-        None
-    )
-
-    # prepare the parameter passed to the TAP_IOCTL_CONFIG_TUN commmand.
-    # This needs to be a 12-character long string representing
-    # - the tun interface's IPv4 address (4 characters)
-    # - the tun interface's IPv4 network address (4 characters)
-    # - the tun interface's IPv4 network mask (4 characters)
-    configTunParam = []
-    configTunParam += ip_address
-    configTunParam += TUN_IPv4_NETWORK
-    configTunParam += TUN_IPv4_NETMASK
-    configTunParam = ''.join([chr(b) for b in configTunParam])
-
-    # switch to TUN mode (by default the interface runs in TAP mode)
-    win32file.DeviceIoControl(
-        tuntap,
-        TAP_IOCTL_CONFIG_TUN,
-        configTunParam,
-        None
-    )
-
-    # return the handler of the TUN interface
-    return tuntap
+    raise Exception("No available TAP-Windows adapter")
 
 
 #============================ threads =========================================
@@ -200,14 +171,13 @@ class ReadThread(threading.Thread):
     ETHERNET_MTU = 1500
     IPv6_HEADER_LENGTH = 40
 
-    def __init__(self, tuntap, interface):
+    def __init__(self, interface):
 
         # store params
-        self.tuntap = tuntap
         self.interface = interface
 
         # local variables
-        self.goOn = True
+        self.goOn = False
         self.overlappedRx = pywintypes.OVERLAPPED()
         self.overlappedRx.hEvent = win32event.CreateEvent(None, 0, 0, None)
 
@@ -218,13 +188,20 @@ class ReadThread(threading.Thread):
         self.name = 'readThread'
 
     def run(self):
+        self.goOn = True
 
         rxbuffer = win32file.AllocateReadBuffer(self.ETHERNET_MTU)
 
         while self.goOn:
 
             # wait for data
-            l, p = win32file.ReadFile(self.tuntap, rxbuffer, self.overlappedRx)
+            try:
+                l, p = win32file.ReadFile(
+                    self.interface.tuntap, rxbuffer, self.overlappedRx)
+            except Exception:
+                print 'Tun adapter failed. Recovering...'
+                self.goOn = False
+                break
 
             win32event.WaitForSingleObject(
                 self.overlappedRx.hEvent, win32event.INFINITE)
@@ -255,14 +232,13 @@ class WriteThread(threading.Thread):
     \brief Thread with periodically sends IPv4 and IPv6 echo requests.
     '''
 
-    def __init__(self, tuntap, interface):
+    def __init__(self, interface):
 
         # store params
-        self.tuntap = tuntap
         self.interface = interface
 
         # local variables
-        self.goOn = True
+        self.goOn = False
         self.overlappedTx = pywintypes.OVERLAPPED()
         self.overlappedTx.hEvent = win32event.CreateEvent(None, 0, 0, None)
 
@@ -273,6 +249,7 @@ class WriteThread(threading.Thread):
         self.name = 'writeThread'
 
     def run(self):
+        self.goOn = True
 
         while self.goOn:
             # Receive packet from packet handler
@@ -287,7 +264,8 @@ class WriteThread(threading.Thread):
     def transmit(self, dataToTransmit):
 
         # write over tuntap interface
-        win32file.WriteFile(self.tuntap, dataToTransmit, self.overlappedTx)
+        win32file.WriteFile(
+            self.interface.tuntap, dataToTransmit, self.overlappedTx)
         win32event.WaitForSingleObject(
             self.overlappedTx.hEvent, win32event.INFINITE)
         self.overlappedTx.Offset = self.overlappedTx.Offset + \

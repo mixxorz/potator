@@ -43,14 +43,14 @@ class Potator(object):
         reactor.listenTCP(self.config['API_PORT'], PotatorApiFactory(self))
 
     def start(self):
-        self.interface.start()
+        # self.interface.start()
         # self.stats.start()
         reactor.run()
 
     def stop(self):
         self.interface.stop()
         # self.stats.stop()
-        reactor.stop()
+        # reactor.stop()
 
     def incomingCallback(self, spore_string):
         spore = Spore()
@@ -95,18 +95,15 @@ def main():
     parser = argparse.ArgumentParser(description='Potator v0.1')
     parser.add_argument(
         'ip_address',
-        help='IP address that will be set for this Potator client.')
+        help='An IP address in CIDR notation (e.g. 4.4.4.1/8) to be used.')
     parser.add_argument(
         'network_identifier',
-        help='A string that identifies this instance of Potator.')
+        help='A name for this Potator network.')
 
     app = Potator(parser.parse_args())
 
-    try:
-        app.start()
-    except KeyboardInterrupt:
-        app.stop()
-        return 0
+    reactor.addSystemEventTrigger('before', 'shutdown', app.stop)
+    app.start()
 
 if __name__ == '__main__':
     sys.exit(main())
