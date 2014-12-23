@@ -102,11 +102,8 @@ def main():
 
     app = Potator(parser.parse_args())
 
-    try:
-        app.start()
-    except KeyboardInterrupt:
-        app.stop()
-        return 0
+    reactor.addSystemEventTrigger('before', 'shutdown', app.stop)
+    app.start()
 
 if __name__ == '__main__':
     sys.exit(main())
