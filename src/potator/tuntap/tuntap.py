@@ -1,45 +1,68 @@
 import _winreg as reg
 import threading
-from struct import unpack
 from Queue import Queue
+from struct import unpack
 
+import ipaddr
+import pythoncom
 import pywintypes
 import win32event
 import win32file
-import ipaddr
-from impacket import ImpactDecoder
 import wmi
+from impacket import ImpactDecoder
+from twisted.internet import defer, task, threads, reactor
 
 
 class TunInterface(object):
 
     def __init__(self, potator):
         self.potator = potator
-        self.tuntap = self._openTunTap()
+
         self.sent_bytes = 0
         self.received_bytes = 0
 
-        self.readThread = ReadThread(self.tuntap, self)
-        self.writeThread = WriteThread(self.tuntap, self)
+        self.readThread = ReadThread(self)
+        self.writeThread = WriteThread(self)
+        self.started = False
+        self.failed = False
 
         self.writeBuffer = Queue()
 
-    def start(self):
-        self.readThread.start()
-        self.writeThread.start()
+        self._runner_loop = task.LoopingCall(self._runner)
+        self._runner_loop.start(5.0)
 
     def stop(self):
-        self.readThread.close()
-        self.writeThread.close()
-        win32file.CloseHandle(self.tuntap)
+        try:
+            self.readThread.close()
+            self.writeThread.close()
+            win32file.CloseHandle(self.tuntap)
+        except Exception:
+            pass
+
+    @defer.inlineCallbacks
+    def _runner(self):
+        if not self.readThread.goOn or not self.writeThread.goOn:
+            self.failed = True
+
+        if self.failed or not self.started:
+            self.started = True
+            self.failed = False
+            self.stop()
+
+            try:
+                self.tuntap = yield threads.deferToThread(self._openTunTap)
+            except Exception, e:
+                print 'ERROR:', e
+                reactor.stop()
+            self.readThread = ReadThread(self)
+            self.writeThread = WriteThread(self)
+            self.readThread.daemon = True
+            self.writeThread.daemon = True
+            self.readThread.start()
+            self.writeThread.start()
 
     def _openTunTap(self):
-        '''
-        \brief Open a TUN/TAP interface and switch it to TUN mode.
-
-        \return The handler of the interface, which can be used for later
-            read/write operations.
-        '''
+        pythoncom.CoInitialize()
 
         interface = get_available_tuntap_interface()
 
@@ -54,7 +77,8 @@ class TunInterface(object):
         )
 
         # Rename interface
-        connection_key = INSTANCE_KEY + '\\' + interface.SettingID + '\\Connection'
+        connection_key = INSTANCE_KEY + '\\' + \
+            interface.SettingID + '\\Connection'
         with reg.OpenKey(reg.HKEY_LOCAL_MACHINE, connection_key, 0,
                          reg.KEY_ALL_ACCESS) as instance:
             reg.SetValueEx(
@@ -96,7 +120,9 @@ class TunInterface(object):
         )
 
         # Set the IP address and Subnet mask statically
-        interface.EnableStatic(IPAddress=[unicode(ip_address.ip)], SubnetMask=[unicode(ip_address.netmask)])
+        interface.EnableStatic(
+            IPAddress=[unicode(ip_address.ip)],
+            SubnetMask=[unicode(ip_address.netmask)])
 
         # return the handler of the TUN interface
         return tuntap
@@ -145,14 +171,13 @@ class ReadThread(threading.Thread):
     ETHERNET_MTU = 1500
     IPv6_HEADER_LENGTH = 40
 
-    def __init__(self, tuntap, interface):
+    def __init__(self, interface):
 
         # store params
-        self.tuntap = tuntap
         self.interface = interface
 
         # local variables
-        self.goOn = True
+        self.goOn = False
         self.overlappedRx = pywintypes.OVERLAPPED()
         self.overlappedRx.hEvent = win32event.CreateEvent(None, 0, 0, None)
 
@@ -163,13 +188,20 @@ class ReadThread(threading.Thread):
         self.name = 'readThread'
 
     def run(self):
+        self.goOn = True
 
         rxbuffer = win32file.AllocateReadBuffer(self.ETHERNET_MTU)
 
         while self.goOn:
 
             # wait for data
-            l, p = win32file.ReadFile(self.tuntap, rxbuffer, self.overlappedRx)
+            try:
+                l, p = win32file.ReadFile(
+                    self.interface.tuntap, rxbuffer, self.overlappedRx)
+            except Exception:
+                print 'Tun adapter failed. Recovering...'
+                self.goOn = False
+                break
 
             win32event.WaitForSingleObject(
                 self.overlappedRx.hEvent, win32event.INFINITE)
@@ -200,14 +232,13 @@ class WriteThread(threading.Thread):
     \brief Thread with periodically sends IPv4 and IPv6 echo requests.
     '''
 
-    def __init__(self, tuntap, interface):
+    def __init__(self, interface):
 
         # store params
-        self.tuntap = tuntap
         self.interface = interface
 
         # local variables
-        self.goOn = True
+        self.goOn = False
         self.overlappedTx = pywintypes.OVERLAPPED()
         self.overlappedTx.hEvent = win32event.CreateEvent(None, 0, 0, None)
 
@@ -218,6 +249,7 @@ class WriteThread(threading.Thread):
         self.name = 'writeThread'
 
     def run(self):
+        self.goOn = True
 
         while self.goOn:
             # Receive packet from packet handler
@@ -232,7 +264,8 @@ class WriteThread(threading.Thread):
     def transmit(self, dataToTransmit):
 
         # write over tuntap interface
-        win32file.WriteFile(self.tuntap, dataToTransmit, self.overlappedTx)
+        win32file.WriteFile(
+            self.interface.tuntap, dataToTransmit, self.overlappedTx)
         win32event.WaitForSingleObject(
             self.overlappedTx.hEvent, win32event.INFINITE)
         self.overlappedTx.Offset = self.overlappedTx.Offset + \

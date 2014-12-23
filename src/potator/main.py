@@ -43,14 +43,14 @@ class Potator(object):
         reactor.listenTCP(self.config['API_PORT'], PotatorApiFactory(self))
 
     def start(self):
-        self.interface.start()
+        # self.interface.start()
         # self.stats.start()
         reactor.run()
 
     def stop(self):
         self.interface.stop()
         # self.stats.stop()
-        reactor.stop()
+        # reactor.stop()
 
     def incomingCallback(self, spore_string):
         spore = Spore()
