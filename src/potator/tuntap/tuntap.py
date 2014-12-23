@@ -8,6 +8,7 @@ import win32event
 import win32file
 import ipaddr
 from impacket import ImpactDecoder
+import wmi
 
 
 class TunInterface(object):
@@ -40,7 +41,17 @@ class TunInterface(object):
             read/write operations.
         '''
 
-        tuntap, componentId = get_available_tuntap_device()
+        componentId = get_available_tuntap_ComponentId()
+
+        tuntap = win32file.CreateFile(
+            r'\\.\Global\%s.tap' % componentId,
+            win32file.GENERIC_READ | win32file.GENERIC_WRITE,
+            win32file.FILE_SHARE_READ | win32file.FILE_SHARE_WRITE,
+            None,
+            win32file.OPEN_EXISTING,
+            win32file.FILE_ATTRIBUTE_SYSTEM | win32file.FILE_FLAG_OVERLAPPED,
+            None
+        )
 
         # Rename interface
         connection_key = INSTANCE_KEY + '\\' + componentId + '\\Connection'
@@ -106,64 +117,14 @@ TAP_IOCTL_SET_MEDIA_STATUS = TAP_CONTROL_CODE(6, 0)
 TAP_IOCTL_CONFIG_TUN = TAP_CONTROL_CODE(10, 0)
 
 
-def get_tuntap_ComponentId(number=0):
-    '''
-    \brief Retrieve the instance ID of the TUN/TAP interface from the Windows
-        registry,
+def get_available_tuntap_ComponentId():
+    nic_configs = wmi.WMI().Win32_NetworkAdapterConfiguration()
+    for interface in nic_configs:
+        if interface.ServiceName == 'tap0901':
+            if not interface.IPEnabled:
+                return interface.SettingID
 
-    This function loops through all the sub-entries at the following location
-    in the Windows registry: reg.HKEY_LOCAL_MACHINE, ADAPTER_KEY
-
-    It looks for one which has the 'ComponentId' key set to
-    TUNTAP_COMPONENT_ID, and returns the value of the 'NetCfgInstanceId' key.
-
-    \return The 'ComponentId' associated with the TUN/TAP interface, a string
-        of the form "{A9A413D7-4D1C-47BA-A3A9-92F091828881}".
-    '''
-    instances = []
-    with reg.OpenKey(reg.HKEY_LOCAL_MACHINE, ADAPTER_KEY) as adapters:
-        try:
-            for i in xrange(10000):
-                key_name = reg.EnumKey(adapters, i)
-                with reg.OpenKey(adapters, key_name) as adapter:
-                    try:
-                        component_id = reg.QueryValueEx(
-                            adapter, 'ComponentId')[0]
-                        if component_id == TUNTAP_COMPONENT_ID:
-                            instances.append(reg.QueryValueEx(
-                                adapter, 'NetCfgInstanceId'
-                            )[0])
-                    except WindowsError:
-                        pass
-        except WindowsError:
-            pass
-
-    try:
-        return instances[number]
-    except IndexError:
-        raise Exception('Could not find available tuntap adapter.')
-
-
-def get_available_tuntap_device():
-    for number in range(0, 10):
-        # retrieve the ComponentId from the TUN/TAP interface
-        componentId = get_tuntap_ComponentId(number)
-
-        # This will fail if already attached
-        # create a win32file for manipulating the TUN/TAP interface\
-        try:
-            tuntap = win32file.CreateFile(
-                r'\\.\Global\%s.tap' % componentId,
-                win32file.GENERIC_READ | win32file.GENERIC_WRITE,
-                win32file.FILE_SHARE_READ | win32file.FILE_SHARE_WRITE,
-                None,
-                win32file.OPEN_EXISTING,
-                win32file.FILE_ATTRIBUTE_SYSTEM | win32file.FILE_FLAG_OVERLAPPED,
-                None
-            )
-            return tuntap, componentId
-        except:
-            continue
+    raise Exception("No available TAP-Windows adapter")
 
 
 #============================ threads =========================================
