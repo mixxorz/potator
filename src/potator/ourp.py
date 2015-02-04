@@ -1,4 +1,5 @@
 import hashlib
+import json
 import time
 
 from twisted.internet import task
@@ -53,6 +54,12 @@ class OnionUrlResolutionProtocol(object):
         spore.ourpData.onionUrl = self.potator.server.tor_launcher.port.getHost(
         ).onion_uri
 
+        if self.potator.config.get('NETWORK_PASSWORD'):
+            payload = {
+                'password': self.potator.config.get('NETWORK_PASSWORD')
+            }
+            spore.ourpData.payload = json.dumps(payload)
+
         def looper():
             # Generate new hash every retry
             spore.hash = self._generateHash()
@@ -89,6 +96,10 @@ class OnionUrlResolutionProtocol(object):
         elif ourpData.type == OurpData.GREETING:
             log.msg('Received OURP Greeting')
             # TODO: Check password
+            if ourpData.payload:
+                payload = json.loads(ourpData.payload)
+                if not payload['password'] == self.potator.config['NETWORK_PASSWORD']:
+                    return
             # Save client's data
             self.potator.db.setOnionUrl(ourpData.ipAddress, ourpData.onionUrl)
             # Send greeting acknowledge
