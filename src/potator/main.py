@@ -1,4 +1,6 @@
 import argparse
+import json
+import os
 import random
 import sys
 
@@ -31,6 +33,28 @@ class Potator(object):
             'CONTROL_PORT': random.randint(49152, 65535),
             'HIDDEN_SERVICE_PORT': 7701
         }
+
+        # Save config
+        if args.new:
+            config_file = open(
+                os.path.join(
+                    'C:\\potator', args.network_identifier, 'config.json'),
+                'w+')
+            configuration = {
+                'network_identifier': args.network_identifier,
+                'ip_address': args.ip_address
+            }
+            config_file.write(json.dumps(configuration, indent=2))
+
+        # Load config if new flag is not set
+        else:
+            config_file = open(
+                os.path.join('C:\\potator', args.network_identifier, 'config.json'))
+            configuration = json.load(config_file)
+            self.config['IP_ADDRESS'] = configuration['ip_address']
+            self.config['NETWORK_ID'] = configuration['network_identifier']
+
+        config_file.close()
 
         self.ourp = OnionUrlResolutionProtocol(self)
         self.network_dispatcher = NetworkDispatcher(self)
@@ -94,11 +118,14 @@ class Potator(object):
 def main():
     parser = argparse.ArgumentParser(description='Potator v0.1')
     parser.add_argument(
-        'ip_address',
-        help='An IP address in CIDR notation (e.g. 4.4.4.1/8) to be used.')
-    parser.add_argument(
         'network_identifier',
         help='A name for this Potator network.')
+    parser.add_argument(
+        'ip_address',
+        nargs='?',
+        help='An IP address in CIDR notation (e.g. 4.4.4.1/8) to be used.')
+    parser.add_argument(
+        '-n', '--new', action='store_true', help='Saves this network.')
 
     app = Potator(parser.parse_args())
 
