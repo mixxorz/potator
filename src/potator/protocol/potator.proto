@@ -17,6 +17,7 @@ message OurpData {
     required OurpType type = 1;
     required string ipAddress = 2;
     optional string onionUrl = 3;
+    optional string payload = 4;
 }
 
 message IpData {
