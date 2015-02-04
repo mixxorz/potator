@@ -24,10 +24,14 @@ class Potator(object):
         log.startLogging(sys.stdout)
         self.db = OnionIPMapper()
 
+        if not os.path.exists('C:\\potator'):
+            os.makedirs('C:\\potator')
+
         # Store all configuration in this dictionary
         self.config = {
             'IP_ADDRESS': args.ip_address,
             'NETWORK_ID': args.network_identifier,
+            'NETWORK_PASSWORD': args.password,
             'SOCKS_PORT': random.randint(49152, 65535),
             'API_PORT': random.randint(49152, 65535),
             'CONTROL_PORT': random.randint(49152, 65535),
@@ -36,14 +40,18 @@ class Potator(object):
 
         # Save config
         if args.new:
-            config_file = open(
-                os.path.join(
-                    'C:\\potator', args.network_identifier, 'config.json'),
-                'w+')
+            config_path = os.path.join(
+                'C:\\potator', args.network_identifier)
+            if not os.path.exists(config_path):
+                os.makedirs(config_path)
+            config_file = open(os.path.join(config_path, 'config.json'), 'w+')
             configuration = {
                 'network_identifier': args.network_identifier,
                 'ip_address': args.ip_address
             }
+            if args.password:
+                configuration['password'] = args.password
+
             config_file.write(json.dumps(configuration, indent=2))
 
         # Load config if new flag is not set
@@ -53,6 +61,8 @@ class Potator(object):
             configuration = json.load(config_file)
             self.config['IP_ADDRESS'] = configuration['ip_address']
             self.config['NETWORK_ID'] = configuration['network_identifier']
+            self.config['NETWORK_PASSWORD'] = configuration.get(
+                'password', None)
 
         config_file.close()
 
@@ -124,6 +134,9 @@ def main():
         'ip_address',
         nargs='?',
         help='An IP address in CIDR notation (e.g. 4.4.4.1/8) to be used.')
+    parser.add_argument(
+        '-p', '--password', nargs='?', const=None,
+        help='Password for this network.')
     parser.add_argument(
         '-n', '--new', action='store_true', help='Saves this network.')
 
