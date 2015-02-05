@@ -30,7 +30,7 @@ class Potator(object):
 
         # Store all configuration in this dictionary
         self.config = {
-            'IP_ADDRESS': ipaddr.IPv4Network(args.ip_address).ip,
+            'IP_ADDRESS': str(ipaddr.IPv4Network(args.ip_address).ip),
             'IP_NETWORK': args.ip_address,
             'NETWORK_ID': args.network_identifier,
             'NETWORK_PASSWORD': args.password,
