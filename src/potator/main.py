@@ -30,8 +30,6 @@ class Potator(object):
 
         # Store all configuration in this dictionary
         self.config = {
-            'IP_ADDRESS': str(ipaddr.IPv4Network(args.ip_address).ip),
-            'IP_NETWORK': args.ip_address,
             'NETWORK_ID': args.network_identifier,
             'NETWORK_PASSWORD': args.password,
             'SOCKS_PORT': random.randint(49152, 65535),
@@ -49,19 +47,23 @@ class Potator(object):
             config_file = open(os.path.join(config_path, 'config.json'), 'w+')
             configuration = {
                 'network_identifier': args.network_identifier,
-                'ip_address': args.ip_address
+                'ip_network': args.ip_network
             }
             if args.password:
                 configuration['password'] = args.password
 
             config_file.write(json.dumps(configuration, indent=2))
+            ip = ipaddr.IPv4Network(args.ip_address)
+            self.config['IP_ADDRESS'] = str(ip.ip)
+            self.config['IP_NETWORK'] = str(ip.network)
 
         # Load config if new flag is not set
         else:
             config_file = open(
                 os.path.join('C:\\potator', args.network_identifier, 'config.json'))
             configuration = json.load(config_file)
-            self.config['IP_ADDRESS'] = configuration['ip_address']
+            self.config['IP_NETWORK'] = configuration['ip_network']
+            self.config['IP_ADDRESS'] = str(ipaddr.IPv4Network(configuration['ip_network']).ip)
             self.config['NETWORK_ID'] = configuration['network_identifier']
             self.config['NETWORK_PASSWORD'] = configuration.get(
                 'password', None)
@@ -133,9 +135,9 @@ def main():
         'network_identifier',
         help='A name for this Potator network.')
     parser.add_argument(
-        'ip_address',
+        'ip_network',
         nargs='?',
-        help='An IP address in CIDR notation (e.g. 4.4.4.1/8) to be used.')
+        help='An IP address in CIDR notation (e.g. 4.4.4.1/8) to be used. e.g. 4.4.4.1/8 for 4.4.4.1 255.0.0.0.')
     parser.add_argument(
         '-p', '--password', nargs='?', const=None,
         help='Password for this network.')
