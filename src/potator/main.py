@@ -53,7 +53,7 @@ class Potator(object):
                 configuration['password'] = args.password
 
             config_file.write(json.dumps(configuration, indent=2))
-            ip = ipaddr.IPv4Network(args.ip_address)
+            ip = ipaddr.IPv4Network(args.ip_network)
             self.config['IP_ADDRESS'] = str(ip.ip)
             self.config['IP_NETWORK'] = str(ip.network)
 
