@@ -4,6 +4,7 @@ import os
 import random
 import sys
 
+import ipaddr
 from impacket import ImpactDecoder
 from twisted.internet import reactor
 from twisted.python import log
@@ -29,7 +30,8 @@ class Potator(object):
 
         # Store all configuration in this dictionary
         self.config = {
-            'IP_ADDRESS': args.ip_address,
+            'IP_ADDRESS': ipaddr.IPv4Network(args.ip_address).ip,
+            'IP_NETWORK': args.ip_address,
             'NETWORK_ID': args.network_identifier,
             'NETWORK_PASSWORD': args.password,
             'SOCKS_PORT': random.randint(49152, 65535),
