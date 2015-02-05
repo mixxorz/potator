@@ -47,7 +47,7 @@ class Server(object):
         self.tor_launcher = TorLauncher(self)
 
     def sendSpore(self, onion_url, spore):
-        log.msg('Sending to %s' % onion_url)
+        # log.msg('Sending to %s' % onion_url)
         d = self.getProtocol(onion_url)
         d.addCallback(self.send, spore)
 

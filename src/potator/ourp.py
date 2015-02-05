@@ -63,6 +63,7 @@ class OnionUrlResolutionProtocol(object):
         def looper():
             # Generate new hash every retry
             spore.hash = self._generateHash()
+            log.msg('[OURP] GREETING to %s' % destination)
             self.potator.server.sendSpore(
                 destination, spore.SerializeToString())
             self.potator.network_dispatcher.hash_cache.append(spore.hash)
@@ -94,11 +95,12 @@ class OnionUrlResolutionProtocol(object):
             self.potator.db.setOnionUrl(ourpData.ipAddress, ourpData.onionUrl)
 
         elif ourpData.type == OurpData.GREETING:
-            log.msg('Received OURP Greeting')
+            log.msg('[OURP] GREETING from %s' % ourpData.onionUrl)
             # TODO: Check password
             if ourpData.payload:
                 payload = json.loads(ourpData.payload)
                 if not payload['password'] == self.potator.config['NETWORK_PASSWORD']:
+                    log.msg('[OURP] GREETING WRONG PASSWORD')
                     return
             # Save client's data
             self.potator.db.setOnionUrl(ourpData.ipAddress, ourpData.onionUrl)
