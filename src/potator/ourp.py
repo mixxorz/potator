@@ -96,12 +96,20 @@ class OnionUrlResolutionProtocol(object):
 
         elif ourpData.type == OurpData.GREETING:
             log.msg('[OURP] GREETING from %s' % ourpData.onionUrl)
-            # TODO: Check password
-            if ourpData.payload:
+            # If password is set
+            if self.potator.config.get('NETWORK_PASSWORD'):
+                if not ourpData.payload:  # no payload, no reply
+                    log.msg('[OURP] GREETING NO PAYLOAD')
+                    return
+
                 payload = json.loads(ourpData.payload)
                 if not payload['password'] == self.potator.config['NETWORK_PASSWORD']:
                     log.msg('[OURP] GREETING WRONG PASSWORD')
                     return
+
+                # Made it here, password correct
+                log.msg('[OURP] GREETING AUTH SUCCESS')
+
             # Save client's data
             self.potator.db.setOnionUrl(ourpData.ipAddress, ourpData.onionUrl)
             # Send greeting acknowledge
