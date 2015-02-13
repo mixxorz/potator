@@ -55,7 +55,7 @@ class Potator(object):
             config_file.write(json.dumps(configuration, indent=2))
             ip = ipaddr.IPv4Network(args.ip_network)
             self.config['IP_ADDRESS'] = str(ip.ip)
-            self.config['IP_NETWORK'] = str(ip.network)
+            self.config['IP_NETWORK'] = args.ip_network
 
         # Load config if new flag is not set
         else:
