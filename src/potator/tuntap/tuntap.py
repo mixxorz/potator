@@ -100,7 +100,7 @@ class TunInterface(object):
         # - the tun interface's IPv4 network address (4 characters)
         # - the tun interface's IPv4 network mask (4 characters)
 
-        ip_address = ipaddr.IPv4Network(self.potator.config['IP_ADDRESS'])
+        ip_address = ipaddr.IPv4Network(self.potator.config['IP_NETWORK'])
         TUN_IPv4_ADDRESS = [int(x) for x in str(ip_address.ip).split('.')]
         TUN_IPv4_NETWORK = [int(x) for x in str(ip_address.network).split('.')]
         TUN_IPv4_NETMASK = [int(x) for x in str(ip_address.netmask).split('.')]

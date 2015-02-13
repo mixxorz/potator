@@ -1,4 +1,5 @@
 import hashlib
+import json
 import time
 
 from twisted.internet import task
@@ -53,9 +54,16 @@ class OnionUrlResolutionProtocol(object):
         spore.ourpData.onionUrl = self.potator.server.tor_launcher.port.getHost(
         ).onion_uri
 
+        if self.potator.config.get('NETWORK_PASSWORD'):
+            payload = {
+                'password': self.potator.config.get('NETWORK_PASSWORD')
+            }
+            spore.ourpData.payload = json.dumps(payload)
+
         def looper():
             # Generate new hash every retry
             spore.hash = self._generateHash()
+            log.msg('[OURP] GREETING to %s' % destination)
             self.potator.server.sendSpore(
                 destination, spore.SerializeToString())
             self.potator.network_dispatcher.hash_cache.append(spore.hash)
@@ -87,8 +95,21 @@ class OnionUrlResolutionProtocol(object):
             self.potator.db.setOnionUrl(ourpData.ipAddress, ourpData.onionUrl)
 
         elif ourpData.type == OurpData.GREETING:
-            log.msg('Received OURP Greeting')
-            # TODO: Check password
+            log.msg('[OURP] GREETING from %s' % ourpData.onionUrl)
+            # If password is set
+            if self.potator.config.get('NETWORK_PASSWORD'):
+                if not ourpData.payload:  # no payload, no reply
+                    log.msg('[OURP] GREETING NO PAYLOAD')
+                    return
+
+                payload = json.loads(ourpData.payload)
+                if not payload['password'] == self.potator.config['NETWORK_PASSWORD']:
+                    log.msg('[OURP] GREETING WRONG PASSWORD')
+                    return
+
+                # Made it here, password correct
+                log.msg('[OURP] GREETING AUTH SUCCESS')
+
             # Save client's data
             self.potator.db.setOnionUrl(ourpData.ipAddress, ourpData.onionUrl)
             # Send greeting acknowledge
