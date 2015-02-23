@@ -18,3 +18,6 @@ class OnionIPMapper(object):
 
     def getAllOnionUrls(self):
         return [value for key, value in self.mappings.iteritems()]
+
+    def getAllMappings(self):
+        return [(key, value) for key, value in self.mappings.iteritems()]

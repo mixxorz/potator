@@ -75,6 +75,14 @@ class PotatorApiProtocol(basic.LineReceiver):
             log.msg('Pinging %s' % onion_url)
             self.factory.potator.ping.ping(onion_url)
 
+    def do_get_mappings(self, *args):
+        '''Returns the Onion URL - IP Address mappings'''
+
+        for ip_address, onion_url in self.factory.potator.db.getAllMappings():
+            self.sendLine('%s-%s' % (ip_address, onion_url))
+
+        self.sendLine('END_GET_MAPPINGS')
+
     def connectionLost(self, reason):
         pass
 
