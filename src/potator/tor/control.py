@@ -1,4 +1,5 @@
 import glob
+import json
 import os
 
 import txtorcon
@@ -24,18 +25,21 @@ class TorLauncher(object):
         self.config.ControlPort = self.server.potator.config['CONTROL_PORT']
         self.config.DataDirectory = data_directory
 
-        # For testing tor network
-        # TODO: This is only for testing, configure properly for production
-        self.config.TestingTorNetwork = 1
-        self.config.DirAuthority = [
-            'test000a orport=5000 no-v2 hs v3ident=48BE4D5109DB962D54858309C7EECE4887C064B8 192.168.1.147:7000 B342E8AA94320304AC0C68658C3C0DEAE3286C7D',
-            'test001a orport=5001 no-v2 hs v3ident=830F1E09AAC3A99948279F0A59C083F0AC39FF8F 192.168.1.147:7001 F5A783D42840CBDB9505BB05F3F4B8DF78206309',
-            'test002a orport=5002 no-v2 hs v3ident=ABB238BF33AB89A65239F94E59A2908C26EB7C76 192.168.1.147:7002 15CB3AB45401452FE8F506FA2A0CC2516814D843'
-        ]
+        # Load custom config if it exists
+        # We use this to connect to local tor networks
+        try:
+            with open(os.path.join('C:\\potator', 'torconfig.json'),
+                      'r') as torconfigfile:
+                log.msg('Loading custom tor configuration')
+                torconfig = json.loads(torconfigfile.read())
+                for key, value in torconfig.iteritems():
+                    setattr(self.config, key, value)
+        except IOError:
+            pass
 
         self.config.save()
 
-        # TODO: REFRACTOR
+        # TODO: REFACTOR
         tor_binary = None
         globs = (
             'C:\\Program Files\\Tor\\',
