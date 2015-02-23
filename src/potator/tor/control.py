@@ -73,6 +73,10 @@ class TorLauncher(object):
             hidden_service_dir=hidden_service_dir)
         self.port = yield endpoint.listen(self.server.factory)
 
+        self.server.potator.db.setOnionUrl(
+            self.server.potator.config['IP_ADDRESS'],
+            self.port.getHost().onion_uri)
+
     def error(self, failure):
         log.msg("There was an error", failure.getErrorMessage())
         reactor.stop()
