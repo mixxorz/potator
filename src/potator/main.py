@@ -56,6 +56,11 @@ class Potator(object):
             ip = ipaddr.IPv4Network(args.ip_network)
             self.config['IP_ADDRESS'] = str(ip.ip)
             self.config['IP_NETWORK'] = args.ip_network
+            config_file.close()
+            log.msg('Network %s created.' % self.config['NETWORK_ID'])
+            log.msg('You can now use this network by running `python cli.py %s`' %
+                    self.config['NETWORK_ID'])
+            sys.exit(0)
 
         # Load config if new flag is not set
         else:
@@ -63,12 +68,13 @@ class Potator(object):
                 os.path.join('C:\\potator', args.network_identifier, 'config.json'))
             configuration = json.load(config_file)
             self.config['IP_NETWORK'] = configuration['ip_network']
-            self.config['IP_ADDRESS'] = str(ipaddr.IPv4Network(configuration['ip_network']).ip)
+            self.config['IP_ADDRESS'] = str(
+                ipaddr.IPv4Network(configuration['ip_network']).ip)
             self.config['NETWORK_ID'] = configuration['network_identifier']
             self.config['NETWORK_PASSWORD'] = configuration.get(
                 'password', None)
 
-        config_file.close()
+            config_file.close()
 
         self.ourp = OnionUrlResolutionProtocol(self)
         self.network_dispatcher = NetworkDispatcher(self)
