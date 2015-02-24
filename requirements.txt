@@ -7,3 +7,4 @@ protobuf==2.6.0
 txtorcon==0.11.0
 ipaddr==2.1.11
 WMI==1.4.9
+txJSON-RPC==0.3.1
