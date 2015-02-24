@@ -15,7 +15,6 @@ class NetworkDispatcher(object):
         reactor.callLater(self.timeout, self._clearHashStore)
 
     def _clearHashStore(self):
-        log.msg('Clearing hash store')
         self.hash_cache = []
         reactor.callLater(self.timeout, self._clearHashStore)
 
