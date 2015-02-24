@@ -8,8 +8,9 @@ import ipaddr
 from impacket import ImpactDecoder
 from twisted.internet import reactor
 from twisted.python import log
+from twisted.web import server
 
-from .api import PotatorApiFactory
+from .api import PotatorAPI
 from .database import OnionIPMapper
 from .network_dispatcher import NetworkDispatcher
 from .ourp import OnionUrlResolutionProtocol
@@ -84,7 +85,8 @@ class Potator(object):
         self.interface = TunInterface(self)
         # self.stats = StatPrinter(server, interface)
 
-        reactor.listenTCP(self.config['API_PORT'], PotatorApiFactory(self))
+        reactor.listenTCP(self.config['API_PORT'],
+                          server.Site(PotatorAPI(self)))
 
     def start(self):
         # self.interface.start()

@@ -20,4 +20,4 @@ class OnionIPMapper(object):
         return [value for key, value in self.mappings.iteritems()]
 
     def getAllMappings(self):
-        return [(key, value) for key, value in self.mappings.iteritems()]
+        return self.mappings
