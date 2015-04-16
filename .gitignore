@@ -21,3 +21,9 @@ venv/
 # Other crap
 tor_dir_test/
 tor_dir_live/
+
+# added by GitSavvy
+/docs/_build/doctrees/environment.pickle
+
+# added by GitSavvy
+docs/_build/
