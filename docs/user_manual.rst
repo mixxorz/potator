@@ -4,7 +4,7 @@ User Manual
 System Overview
 ---------------
 
-The Potator application allows users to communicate peer-to-peer, similar to a switched network, over the Tor network. It is the bridge between the Tor network and the regular IP network. Potator will open a Virtual Network Interface Card to interface with applications running under Windows, while also creating an instance of Tor for which to send packets through. Any packet that is bound for another client in the Potator Network would pass through the Virtual NIC, the Potator application, and then the Tor application which would route the packet through the Tor network. Said packet would enter the destination machine in a similar fashion it left the source machine. 
+The Potator application allows users to communicate peer-to-peer, similar to a switched network, over the Tor network. It is the bridge between the Tor network and the regular IP network. Potator will open a Virtual Network Interface Card to interface with applications running under Windows, while also creating an instance of Tor for which to send packets through. Any packet that is bound for another client in the Potator Network would pass through the Virtual NIC, the Potator application, and then the Tor application which would route the packet through the Tor network. Said packet would enter the destination machine in a similar fashion it left the source machine.
 
 Peer to peer communication is not inherently supported by Tor. Potator will accomplish peer to peer connectivity by using the Hidden Service feature of Tor. Each Potator node, a computer connected to a Potator network, will have an onion URL, thus allowing two way connectivity between nodes. Commands called Onion URL Resolution Protocol (OURP) commands are sent between nodes in the Potator network to facilitate network discovery and node connectivity. All packets traversing the Potator network are encapsulated in Spores, data containers Potator uses for communication.
 
@@ -41,8 +41,8 @@ Other Requirements
 Getting Started
 ---------------
 
-Installing Potator is as simple as extracting the 32-bit (x86) or the 64-bit (x64) version to the root of your hard drive (normally C:\ ) and then adding the said directory to your system variables. At this point, Potator is now usable through the command line. This manual however, does not cover how to use Potator through the command line, but instead covers setting up and using Potator with Potator UI, a user interface created for Potator. 
-Make sure that you have all the other dependencies listed under ‘Other Requirements’ before proceeding to install Potator UI. The following instructions are done using a command line, inside the Potator UI folder provided along with the installation files. 
+Installing Potator is as simple as extracting the 32-bit (x86) or the 64-bit (x64) version to the root of your hard drive (normally C:\ ) and then adding the said directory to your :code:`PATH` environment variable. At this point, Potator is now usable through the command line. This manual however, does not cover how to use Potator through the command line, but instead covers setting up and using Potator with Potator UI, a user interface created for Potator.
+Make sure that you have all the other dependencies listed under ‘Other Requirements’ before proceeding to install Potator UI. The following instructions are done using a command line, inside the Potator UI folder provided along with the installation files.
 
 Installing Potator UI
 ~~~~~~~~~~~~~~~~~~~~~
@@ -59,7 +59,7 @@ Installing Potator UI
 | dependencies                   | | bower install                                                                     |
 |                                | | npm install                                                                       |
 +--------------------------------+-------------------------------------------------------------------------------------+
-| Run grunt once to compile      | | grunt                                                                             |   
+| Run grunt once to compile      | | grunt                                                                             |
 | Jade and Sass files            |                                                                                     |
 +--------------------------------+-------------------------------------------------------------------------------------+
 | Download atom-shell            | | cd ../build                                                                       |
@@ -133,7 +133,7 @@ Potator and Potator UI are at its early stages, and while there is an accompanyi
 
 *At this point in writing, it’s worth taking note that these repositories are set to private. You would have to contact the authors*
 *of the respective repositories to start contributing*.
- 
+
 
 
 
