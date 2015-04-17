@@ -1,3 +1,6 @@
+""" Handles launching Tor with the correct configuration
+"""
+
 import glob
 import json
 import os
@@ -8,6 +11,14 @@ from twisted.python import log
 
 
 class TorLauncher(object):
+    """ The Class that starts the Tor instance
+
+    When this class is instantiated, it launches a new instance of Tor using
+    the declared potator configuration
+
+    It also reads a :code:`torconfig.json` file in :code:`C:\\potator` to apply
+    custom configuration to Tor itself
+    """
 
     def __init__(self, server):
         self.server = server
@@ -61,6 +72,8 @@ class TorLauncher(object):
 
     @defer.inlineCallbacks
     def launched(self, process_proto):
+        """ Callback when Tor is launched
+        """
         log.msg("Tor has launched.")
         log.msg("SocksPort is on ", self.config.SocksPort)
         hidden_service_dir = os.path.join(
@@ -78,10 +91,14 @@ class TorLauncher(object):
             self.port.getHost().onion_uri)
 
     def error(self, failure):
+        """ Callback that prints errors when they occur
+        """
         log.msg("There was an error", failure.getErrorMessage())
         reactor.stop()
 
     def progress(self, percent, tag, summary):
+        """ Callback that displays Tor's connection progress
+        """
         ticks = int((percent / 100.0) * 10.0)
         prog = (ticks * '#') + ((10 - ticks) * '.')
         log.msg('%s %s' % (prog, summary))
