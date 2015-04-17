@@ -170,9 +170,8 @@ class ReadThread(threading.Thread):
     # TODO: Change text
     ''' Thread which continously reads input from a TUN interface.
 
-    If that input is an IPv4 echo request (a "ping" command) issued to
-    any IP address in the virtual network behind the TUN interface, this thread
-    answers with the appropriate echo reply.
+    The parsed IP packet is passed onto \
+    :func:`potator.main.Potator.outgoingCallback`
     '''
 
     ETHERNET_MTU = 1500
@@ -235,7 +234,7 @@ class ReadThread(threading.Thread):
 
 class WriteThread(threading.Thread):
 
-    ''' Thread with periodically sends IPv4 and IPv6 echo requests.
+    ''' Thread that writes data out to tuntap.
     '''
 
     def __init__(self, interface):

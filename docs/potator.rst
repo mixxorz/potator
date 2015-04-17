@@ -61,14 +61,6 @@ potator.ping module
     :undoc-members:
     :show-inheritance:
 
-potator.stats module
---------------------
-
-.. automodule:: potator.stats
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
 potator.util module
 -------------------
 

@@ -1,3 +1,5 @@
+""" Potator's main controller
+"""
 import argparse
 import json
 import os
@@ -21,6 +23,8 @@ from .tuntap.tuntap import TunInterface
 
 
 class Potator(object):
+    """ The main controller. Coordinates between all the modules.
+    """
 
     def __init__(self, args):
         log.startLogging(sys.stdout)
@@ -89,16 +93,31 @@ class Potator(object):
                           server.Site(PotatorAPI(self)))
 
     def start(self):
+        """ Starts Potator
+        """
         # self.interface.start()
         # self.stats.start()
         reactor.run()
 
     def stop(self):
+        """ Stops Potator, initiates cleanup
+        """
         self.interface.stop()
         # self.stats.stop()
         # reactor.stop()
 
     def incomingCallback(self, spore_string):
+        """ Callback when a spore is received from a remote node
+
+        :param str spore_string: The spore encoded string
+
+        The :code:`spore` is decoded from the :code:`spore_string` using \
+        protobuf. :code:`spore` is then passed into \
+        :func:`potator.network_dispatcher.NetworkDispatcher.handleDispatch`.
+
+        Depending on whether the spore contains IP or OURP data, it will then \
+        be passed into the OURP module or Tuntap module.
+        """
         spore = Spore()
         spore.ParseFromString(spore_string)
         spore = self.network_dispatcher.handleDispatch(spore)
@@ -116,8 +135,18 @@ class Potator(object):
                 self.ping.processPing(spore.ping)
 
     def outgoingCallback(self, packet):
-        # TODO: For testing only. Filtering out unwanted packets.
-        # if '4.4.4' in packet.get_ip_dst():
+        """ Callback when an outgoing IP packet is received from Tuntap
+
+        :param packet: The IP packet
+
+        The packet is loaded into a Spore object and encoded into a string \
+        using protobuf. The destination onion URL is acquired from \
+        :func:`potator.database.OnionIPMapper.getOnionUrl`. If the destination \
+        onion URL is not found for the IP address, an OURP request is sent by \
+        calling :func:`potator.ourp.OnionUrlResolutionProtocol.sendRequest`. \
+        If the destination is found, the spore encoded string is sent to its \
+        destination by calling :func:`potator.tor.server.Server.sendSpore`.
+        """
         self.interface.sent_bytes += packet.get_size()
 
         spore = Spore()
@@ -126,8 +155,6 @@ class Potator(object):
         spore.ipData.destinationAddress = packet.get_ip_dst()
         spore.ipData.data = packet.get_packet()
 
-        # TODO: Group number must not be static
-        # TODO: Consider in memory database for better performance
         destination_onion_url = self.db.getOnionUrl(packet.get_ip_dst())
 
         if destination_onion_url:
@@ -138,6 +165,9 @@ class Potator(object):
 
 
 def main():
+    """ The main method. Passes arguments, creates an instance of \
+    :class:`.Potator`.
+    """
     parser = argparse.ArgumentParser(description='Potator v0.1')
     parser.add_argument(
         'network_identifier',
