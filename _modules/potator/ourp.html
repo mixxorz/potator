@@ -1,0 +1,265 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>potator.ourp &mdash; Potator 0.1.0 documentation</title>
+    
+    <link rel="stylesheet" href="../../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../',
+        VERSION:     '0.1.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../_static/doctools.js"></script>
+    <link rel="top" title="Potator 0.1.0 documentation" href="../../index.html" />
+    <link rel="up" title="Module code" href="../index.html" />
+   
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9">
+
+  </head>
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../index.html">Potator 0.1.0 documentation</a> &raquo;</li>
+          <li class="nav-item nav-item-1"><a href="../index.html" accesskey="U">Module code</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for potator.ourp</h1><div class="highlight"><pre>
+<span class="sd">&quot;&quot;&quot; Onion URL Resolution Protocol module. Handles all things OURP.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">import</span> <span class="nn">hashlib</span>
+<span class="kn">import</span> <span class="nn">json</span>
+<span class="kn">import</span> <span class="nn">time</span>
+
+<span class="kn">from</span> <span class="nn">twisted.internet</span> <span class="kn">import</span> <span class="n">task</span>
+<span class="kn">from</span> <span class="nn">twisted.python</span> <span class="kn">import</span> <span class="n">log</span>
+
+<span class="kn">from</span> <span class="nn">.protocol.potator_pb2</span> <span class="kn">import</span> <span class="n">Spore</span><span class="p">,</span> <span class="n">OurpData</span>
+
+
+<div class="viewcode-block" id="OnionUrlResolutionProtocol"><a class="viewcode-back" href="../../potator.html#potator.ourp.OnionUrlResolutionProtocol">[docs]</a><span class="k">class</span> <span class="nc">OnionUrlResolutionProtocol</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot; Handles sending and receiving OURP messages.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">potator</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">potator</span> <span class="o">=</span> <span class="n">potator</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">time_greeting_sent</span> <span class="o">=</span> <span class="bp">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">time_greeting_ack_laps</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">greeting_loop</span> <span class="o">=</span> <span class="bp">None</span>
+
+    <span class="k">def</span> <span class="nf">_generateHash</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">hashlib</span><span class="o">.</span><span class="n">sha1</span><span class="p">(</span>
+            <span class="s">&#39;</span><span class="si">%s%s</span><span class="s">&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">(),</span> <span class="bp">self</span><span class="o">.</span><span class="n">potator</span><span class="o">.</span><span class="n">config</span><span class="p">[</span><span class="s">&#39;IP_ADDRESS&#39;</span><span class="p">])</span>
+        <span class="p">)</span><span class="o">.</span><span class="n">hexdigest</span><span class="p">()</span>
+
+<div class="viewcode-block" id="OnionUrlResolutionProtocol.sendRequest"><a class="viewcode-back" href="../../potator.html#potator.ourp.OnionUrlResolutionProtocol.sendRequest">[docs]</a>    <span class="k">def</span> <span class="nf">sendRequest</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ip_address</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Sends an OURP request broadcast for an IP address</span>
+
+<span class="sd">        :param str ip_addrses: The IP address to query</span>
+
+<span class="sd">        This method creates the OURP request packet, wraps it around a spore \</span>
+<span class="sd">        and broadcasts it by calling \</span>
+<span class="sd">        :func:`potator.network_dispatcher.NetworkDispatcher.handleDispatch`</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">spore</span> <span class="o">=</span> <span class="n">Spore</span><span class="p">()</span>
+        <span class="n">spore</span><span class="o">.</span><span class="n">dataType</span> <span class="o">=</span> <span class="n">spore</span><span class="o">.</span><span class="n">OURP</span>
+        <span class="n">spore</span><span class="o">.</span><span class="n">castType</span> <span class="o">=</span> <span class="n">spore</span><span class="o">.</span><span class="n">BROADCAST</span>
+        <span class="n">spore</span><span class="o">.</span><span class="n">hash</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_generateHash</span><span class="p">()</span>
+        <span class="n">spore</span><span class="o">.</span><span class="n">ourpData</span><span class="o">.</span><span class="n">type</span> <span class="o">=</span> <span class="n">OurpData</span><span class="o">.</span><span class="n">REQUEST</span>
+        <span class="n">spore</span><span class="o">.</span><span class="n">ourpData</span><span class="o">.</span><span class="n">ipAddress</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">potator</span><span class="o">.</span><span class="n">config</span><span class="p">[</span><span class="s">&#39;IP_ADDRESS&#39;</span><span class="p">]</span>
+        <span class="c"># TODO: There might be a more elegant way of doing this</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">potator</span><span class="o">.</span><span class="n">network_dispatcher</span><span class="o">.</span><span class="n">handleDispatch</span><span class="p">(</span><span class="n">spore</span><span class="p">)</span>
+</div>
+<div class="viewcode-block" id="OnionUrlResolutionProtocol.sendReply"><a class="viewcode-back" href="../../potator.html#potator.ourp.OnionUrlResolutionProtocol.sendReply">[docs]</a>    <span class="k">def</span> <span class="nf">sendReply</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Sends an OURP reply if a request for the Potator instance&#39;s IP \</span>
+<span class="sd">        address is received</span>
+
+<span class="sd">        This method creates the OURP reply packet, wraps it around a spore \</span>
+<span class="sd">        and broadcasts it by calling \</span>
+<span class="sd">        :func:`potator.network_dispatcher.NetworkDispatcher.handleDispatch`</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">spore</span> <span class="o">=</span> <span class="n">Spore</span><span class="p">()</span>
+        <span class="n">spore</span><span class="o">.</span><span class="n">dataType</span> <span class="o">=</span> <span class="n">spore</span><span class="o">.</span><span class="n">OURP</span>
+        <span class="n">spore</span><span class="o">.</span><span class="n">castType</span> <span class="o">=</span> <span class="n">spore</span><span class="o">.</span><span class="n">BROADCAST</span>
+        <span class="n">spore</span><span class="o">.</span><span class="n">hash</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_generateHash</span><span class="p">()</span>
+        <span class="n">spore</span><span class="o">.</span><span class="n">ourpData</span><span class="o">.</span><span class="n">type</span> <span class="o">=</span> <span class="n">OurpData</span><span class="o">.</span><span class="n">REPLY</span>
+        <span class="n">spore</span><span class="o">.</span><span class="n">ourpData</span><span class="o">.</span><span class="n">ipAddress</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">potator</span><span class="o">.</span><span class="n">config</span><span class="p">[</span><span class="s">&#39;IP_ADDRESS&#39;</span><span class="p">]</span>
+        <span class="n">spore</span><span class="o">.</span><span class="n">ourpData</span><span class="o">.</span><span class="n">onionUrl</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">potator</span><span class="o">.</span><span class="n">server</span><span class="o">.</span><span class="n">tor_launcher</span><span class="o">.</span><span class="n">port</span><span class="o">.</span><span class="n">getHost</span><span class="p">(</span>
+        <span class="p">)</span><span class="o">.</span><span class="n">onion_uri</span>
+        <span class="c"># TODO: There might be a more elegant way of doing this</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">potator</span><span class="o">.</span><span class="n">network_dispatcher</span><span class="o">.</span><span class="n">handleDispatch</span><span class="p">(</span><span class="n">spore</span><span class="p">)</span>
+</div>
+<div class="viewcode-block" id="OnionUrlResolutionProtocol.sendGreeting"><a class="viewcode-back" href="../../potator.html#potator.ourp.OnionUrlResolutionProtocol.sendGreeting">[docs]</a>    <span class="k">def</span> <span class="nf">sendGreeting</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">destination</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Sends an OURP greeting to destination</span>
+
+<span class="sd">        :param str destination: The onion URL to send the greeting to</span>
+
+<span class="sd">        The OURP greeting packet is crafted and sent to the onion URL by \</span>
+<span class="sd">        calling :func:`potator.tor.server.Server.sendSpore`.</span>
+
+<span class="sd">        The OURP greeting is sent in a loop until Potator receives an OURP \</span>
+<span class="sd">        greeting acknowledge.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">time_greeting_sent</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
+        <span class="n">spore</span> <span class="o">=</span> <span class="n">Spore</span><span class="p">()</span>
+        <span class="n">spore</span><span class="o">.</span><span class="n">dataType</span> <span class="o">=</span> <span class="n">spore</span><span class="o">.</span><span class="n">OURP</span>
+        <span class="n">spore</span><span class="o">.</span><span class="n">castType</span> <span class="o">=</span> <span class="n">spore</span><span class="o">.</span><span class="n">BROADCAST</span>
+        <span class="n">spore</span><span class="o">.</span><span class="n">hash</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_generateHash</span><span class="p">()</span>
+        <span class="n">spore</span><span class="o">.</span><span class="n">ourpData</span><span class="o">.</span><span class="n">type</span> <span class="o">=</span> <span class="n">OurpData</span><span class="o">.</span><span class="n">GREETING</span>
+        <span class="n">spore</span><span class="o">.</span><span class="n">ourpData</span><span class="o">.</span><span class="n">ipAddress</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">potator</span><span class="o">.</span><span class="n">config</span><span class="p">[</span><span class="s">&#39;IP_ADDRESS&#39;</span><span class="p">]</span>
+        <span class="n">spore</span><span class="o">.</span><span class="n">ourpData</span><span class="o">.</span><span class="n">onionUrl</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">potator</span><span class="o">.</span><span class="n">server</span><span class="o">.</span><span class="n">tor_launcher</span><span class="o">.</span><span class="n">port</span><span class="o">.</span><span class="n">getHost</span><span class="p">(</span>
+        <span class="p">)</span><span class="o">.</span><span class="n">onion_uri</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">potator</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;NETWORK_PASSWORD&#39;</span><span class="p">):</span>
+            <span class="n">payload</span> <span class="o">=</span> <span class="p">{</span>
+                <span class="s">&#39;password&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">potator</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;NETWORK_PASSWORD&#39;</span><span class="p">)</span>
+            <span class="p">}</span>
+            <span class="n">spore</span><span class="o">.</span><span class="n">ourpData</span><span class="o">.</span><span class="n">payload</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">payload</span><span class="p">)</span>
+
+        <span class="k">def</span> <span class="nf">looper</span><span class="p">():</span>
+            <span class="c"># Generate new hash every retry</span>
+            <span class="n">spore</span><span class="o">.</span><span class="n">hash</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_generateHash</span><span class="p">()</span>
+            <span class="n">log</span><span class="o">.</span><span class="n">msg</span><span class="p">(</span><span class="s">&#39;[OURP] GREETING to </span><span class="si">%s</span><span class="s">&#39;</span> <span class="o">%</span> <span class="n">destination</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">potator</span><span class="o">.</span><span class="n">server</span><span class="o">.</span><span class="n">sendSpore</span><span class="p">(</span>
+                <span class="n">destination</span><span class="p">,</span> <span class="n">spore</span><span class="o">.</span><span class="n">SerializeToString</span><span class="p">())</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">potator</span><span class="o">.</span><span class="n">network_dispatcher</span><span class="o">.</span><span class="n">hash_cache</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">spore</span><span class="o">.</span><span class="n">hash</span><span class="p">)</span>
+
+        <span class="c"># Retry every 5 seconds</span>
+        <span class="n">l</span> <span class="o">=</span> <span class="n">task</span><span class="o">.</span><span class="n">LoopingCall</span><span class="p">(</span><span class="n">looper</span><span class="p">)</span>
+        <span class="n">l</span><span class="o">.</span><span class="n">start</span><span class="p">(</span><span class="mf">5.0</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">greeting_loop</span> <span class="o">=</span> <span class="n">l</span>
+</div>
+<div class="viewcode-block" id="OnionUrlResolutionProtocol.sendGreetingAck"><a class="viewcode-back" href="../../potator.html#potator.ourp.OnionUrlResolutionProtocol.sendGreetingAck">[docs]</a>    <span class="k">def</span> <span class="nf">sendGreetingAck</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">destination</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Sends an OURP greeting acknowledge to destination</span>
+
+<span class="sd">        :param str destination: The onion URL to send the greeting acknowledge \</span>
+<span class="sd">                                to</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">spore</span> <span class="o">=</span> <span class="n">Spore</span><span class="p">()</span>
+        <span class="n">spore</span><span class="o">.</span><span class="n">dataType</span> <span class="o">=</span> <span class="n">spore</span><span class="o">.</span><span class="n">OURP</span>
+        <span class="n">spore</span><span class="o">.</span><span class="n">castType</span> <span class="o">=</span> <span class="n">spore</span><span class="o">.</span><span class="n">UNICAST</span>
+        <span class="n">spore</span><span class="o">.</span><span class="n">ourpData</span><span class="o">.</span><span class="n">type</span> <span class="o">=</span> <span class="n">OurpData</span><span class="o">.</span><span class="n">GREETING_ACK</span>
+        <span class="n">spore</span><span class="o">.</span><span class="n">ourpData</span><span class="o">.</span><span class="n">ipAddress</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">potator</span><span class="o">.</span><span class="n">config</span><span class="p">[</span><span class="s">&#39;IP_ADDRESS&#39;</span><span class="p">]</span>
+        <span class="n">spore</span><span class="o">.</span><span class="n">ourpData</span><span class="o">.</span><span class="n">onionUrl</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">potator</span><span class="o">.</span><span class="n">server</span><span class="o">.</span><span class="n">tor_launcher</span><span class="o">.</span><span class="n">port</span><span class="o">.</span><span class="n">getHost</span><span class="p">(</span>
+        <span class="p">)</span><span class="o">.</span><span class="n">onion_uri</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">potator</span><span class="o">.</span><span class="n">server</span><span class="o">.</span><span class="n">sendSpore</span><span class="p">(</span><span class="n">destination</span><span class="p">,</span> <span class="n">spore</span><span class="o">.</span><span class="n">SerializeToString</span><span class="p">())</span>
+</div>
+<div class="viewcode-block" id="OnionUrlResolutionProtocol.processOurp"><a class="viewcode-back" href="../../potator.html#potator.ourp.OnionUrlResolutionProtocol.processOurp">[docs]</a>    <span class="k">def</span> <span class="nf">processOurp</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ourpData</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Responds to received OURP messages</span>
+
+<span class="sd">        :param ourpData: The OURP data</span>
+
+<span class="sd">        Different actions are done depending on the type of OURP message \</span>
+<span class="sd">        received</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">ourpData</span><span class="o">.</span><span class="n">type</span> <span class="o">==</span> <span class="n">OurpData</span><span class="o">.</span><span class="n">REQUEST</span><span class="p">:</span>
+            <span class="n">log</span><span class="o">.</span><span class="n">msg</span><span class="p">(</span><span class="s">&#39;Received OURP Request&#39;</span><span class="p">)</span>
+
+            <span class="k">if</span> <span class="n">ourpData</span><span class="o">.</span><span class="n">ipAddress</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">potator</span><span class="o">.</span><span class="n">config</span><span class="p">[</span><span class="s">&#39;IP_ADDRESS&#39;</span><span class="p">]:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">sendReply</span><span class="p">()</span>
+        <span class="k">elif</span> <span class="n">ourpData</span><span class="o">.</span><span class="n">type</span> <span class="o">==</span> <span class="n">OurpData</span><span class="o">.</span><span class="n">REPLY</span><span class="p">:</span>
+            <span class="n">log</span><span class="o">.</span><span class="n">msg</span><span class="p">(</span><span class="s">&#39;Received OURP Reply&#39;</span><span class="p">)</span>
+
+            <span class="bp">self</span><span class="o">.</span><span class="n">potator</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">setOnionUrl</span><span class="p">(</span><span class="n">ourpData</span><span class="o">.</span><span class="n">ipAddress</span><span class="p">,</span> <span class="n">ourpData</span><span class="o">.</span><span class="n">onionUrl</span><span class="p">)</span>
+
+        <span class="k">elif</span> <span class="n">ourpData</span><span class="o">.</span><span class="n">type</span> <span class="o">==</span> <span class="n">OurpData</span><span class="o">.</span><span class="n">GREETING</span><span class="p">:</span>
+            <span class="n">log</span><span class="o">.</span><span class="n">msg</span><span class="p">(</span><span class="s">&#39;[OURP] GREETING from </span><span class="si">%s</span><span class="s">&#39;</span> <span class="o">%</span> <span class="n">ourpData</span><span class="o">.</span><span class="n">onionUrl</span><span class="p">)</span>
+            <span class="c"># If password is set</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">potator</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;NETWORK_PASSWORD&#39;</span><span class="p">):</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="n">ourpData</span><span class="o">.</span><span class="n">payload</span><span class="p">:</span>  <span class="c"># no payload, no reply</span>
+                    <span class="n">log</span><span class="o">.</span><span class="n">msg</span><span class="p">(</span><span class="s">&#39;[OURP] GREETING NO PAYLOAD&#39;</span><span class="p">)</span>
+                    <span class="k">return</span>
+
+                <span class="n">payload</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">ourpData</span><span class="o">.</span><span class="n">payload</span><span class="p">)</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="n">payload</span><span class="p">[</span><span class="s">&#39;password&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">potator</span><span class="o">.</span><span class="n">config</span><span class="p">[</span><span class="s">&#39;NETWORK_PASSWORD&#39;</span><span class="p">]:</span>
+                    <span class="n">log</span><span class="o">.</span><span class="n">msg</span><span class="p">(</span><span class="s">&#39;[OURP] GREETING WRONG PASSWORD&#39;</span><span class="p">)</span>
+                    <span class="k">return</span>
+
+                <span class="c"># Made it here, password correct</span>
+                <span class="n">log</span><span class="o">.</span><span class="n">msg</span><span class="p">(</span><span class="s">&#39;[OURP] GREETING AUTH SUCCESS&#39;</span><span class="p">)</span>
+
+            <span class="c"># Save client&#39;s data</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">potator</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">setOnionUrl</span><span class="p">(</span><span class="n">ourpData</span><span class="o">.</span><span class="n">ipAddress</span><span class="p">,</span> <span class="n">ourpData</span><span class="o">.</span><span class="n">onionUrl</span><span class="p">)</span>
+            <span class="c"># Send greeting acknowledge</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">sendGreetingAck</span><span class="p">(</span><span class="n">ourpData</span><span class="o">.</span><span class="n">onionUrl</span><span class="p">)</span>
+
+        <span class="k">elif</span> <span class="n">ourpData</span><span class="o">.</span><span class="n">type</span> <span class="o">==</span> <span class="n">OurpData</span><span class="o">.</span><span class="n">GREETING_ACK</span><span class="p">:</span>
+            <span class="n">now</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
+            <span class="n">log</span><span class="o">.</span><span class="n">msg</span><span class="p">(</span><span class="s">&#39;Received OURP Greeting Acknowledge&#39;</span><span class="p">)</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">time_greeting_sent</span><span class="p">:</span>
+                <span class="n">log</span><span class="o">.</span><span class="n">msg</span><span class="p">(</span><span class="s">&#39;ACK LAP: </span><span class="si">%s</span><span class="s">&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="n">now</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">time_greeting_sent</span><span class="p">))</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">time_greeting_ack_laps</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">now</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">potator</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">setOnionUrl</span><span class="p">(</span><span class="n">ourpData</span><span class="o">.</span><span class="n">ipAddress</span><span class="p">,</span> <span class="n">ourpData</span><span class="o">.</span><span class="n">onionUrl</span><span class="p">)</span>
+
+            <span class="c"># Stop the looping call</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">greeting_loop</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">greeting_loop</span><span class="o">.</span><span class="n">stop</span><span class="p">()</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">greeting_loop</span> <span class="o">=</span> <span class="bp">None</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c"># Error</span>
+            <span class="k">pass</span></div></div>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2015, Mitchel Cabuloy, Richmond Liclican, Kevin Olsson, Justin Pleyto.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.3.1</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.3</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>

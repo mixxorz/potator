@@ -1,0 +1,195 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>potator.tor.control &mdash; Potator 0.1.0 documentation</title>
+    
+    <link rel="stylesheet" href="../../../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../',
+        VERSION:     '0.1.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../../_static/doctools.js"></script>
+    <link rel="top" title="Potator 0.1.0 documentation" href="../../../index.html" />
+    <link rel="up" title="Module code" href="../../index.html" />
+   
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9">
+
+  </head>
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../../index.html">Potator 0.1.0 documentation</a> &raquo;</li>
+          <li class="nav-item nav-item-1"><a href="../../index.html" accesskey="U">Module code</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for potator.tor.control</h1><div class="highlight"><pre>
+<span class="sd">&quot;&quot;&quot; Handles launching Tor with the correct configuration</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">import</span> <span class="nn">glob</span>
+<span class="kn">import</span> <span class="nn">json</span>
+<span class="kn">import</span> <span class="nn">os</span>
+
+<span class="kn">import</span> <span class="nn">txtorcon</span>
+<span class="kn">from</span> <span class="nn">twisted.internet</span> <span class="kn">import</span> <span class="n">reactor</span><span class="p">,</span> <span class="n">defer</span>
+<span class="kn">from</span> <span class="nn">twisted.python</span> <span class="kn">import</span> <span class="n">log</span>
+
+
+<div class="viewcode-block" id="TorLauncher"><a class="viewcode-back" href="../../../potator.tor.html#potator.tor.control.TorLauncher">[docs]</a><span class="k">class</span> <span class="nc">TorLauncher</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot; The Class that starts the Tor instance</span>
+
+<span class="sd">    When this class is instantiated, it launches a new instance of Tor using</span>
+<span class="sd">    the declared potator configuration</span>
+
+<span class="sd">    It also reads a :code:`torconfig.json` file in :code:`C:\\potator` to apply</span>
+<span class="sd">    custom configuration to Tor itself</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">server</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">server</span> <span class="o">=</span> <span class="n">server</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">port</span> <span class="o">=</span> <span class="bp">None</span>
+        <span class="c"># Tor Configuration</span>
+        <span class="n">data_directory</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span>
+            <span class="s">&#39;C:</span><span class="se">\\</span><span class="s">&#39;</span><span class="p">,</span> <span class="s">&#39;potator&#39;</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">server</span><span class="o">.</span><span class="n">potator</span><span class="o">.</span><span class="n">config</span><span class="p">[</span><span class="s">&#39;NETWORK_ID&#39;</span><span class="p">])</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">os</span><span class="o">.</span><span class="n">mkdir</span><span class="p">(</span><span class="n">data_directory</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">OSError</span><span class="p">:</span>
+            <span class="k">pass</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">config</span> <span class="o">=</span> <span class="n">txtorcon</span><span class="o">.</span><span class="n">TorConfig</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">SocksPort</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">server</span><span class="o">.</span><span class="n">potator</span><span class="o">.</span><span class="n">config</span><span class="p">[</span><span class="s">&#39;SOCKS_PORT&#39;</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">ControlPort</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">server</span><span class="o">.</span><span class="n">potator</span><span class="o">.</span><span class="n">config</span><span class="p">[</span><span class="s">&#39;CONTROL_PORT&#39;</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">DataDirectory</span> <span class="o">=</span> <span class="n">data_directory</span>
+
+        <span class="c"># Load custom config if it exists</span>
+        <span class="c"># We use this to connect to local tor networks</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="s">&#39;C:</span><span class="se">\\</span><span class="s">potator&#39;</span><span class="p">,</span> <span class="s">&#39;torconfig.json&#39;</span><span class="p">),</span>
+                      <span class="s">&#39;r&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">torconfigfile</span><span class="p">:</span>
+                <span class="n">log</span><span class="o">.</span><span class="n">msg</span><span class="p">(</span><span class="s">&#39;Loading custom tor configuration&#39;</span><span class="p">)</span>
+                <span class="n">torconfig</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">torconfigfile</span><span class="o">.</span><span class="n">read</span><span class="p">())</span>
+                <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">torconfig</span><span class="o">.</span><span class="n">iteritems</span><span class="p">():</span>
+                    <span class="nb">setattr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="p">,</span> <span class="n">key</span><span class="p">,</span> <span class="n">value</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">IOError</span><span class="p">:</span>
+            <span class="k">pass</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">save</span><span class="p">()</span>
+
+        <span class="c"># TODO: REFACTOR</span>
+        <span class="n">tor_binary</span> <span class="o">=</span> <span class="bp">None</span>
+        <span class="n">globs</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="s">&#39;C:</span><span class="se">\\</span><span class="s">Program Files</span><span class="se">\\</span><span class="s">Tor</span><span class="se">\\</span><span class="s">&#39;</span><span class="p">,</span>
+            <span class="s">&#39;C:</span><span class="se">\\</span><span class="s">Program Files (x86)</span><span class="se">\\</span><span class="s">Tor</span><span class="se">\\</span><span class="s">&#39;</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="k">for</span> <span class="n">pattern</span> <span class="ow">in</span> <span class="n">globs</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">path</span> <span class="ow">in</span> <span class="n">glob</span><span class="o">.</span><span class="n">glob</span><span class="p">(</span><span class="n">pattern</span><span class="p">):</span>
+                <span class="n">torbin</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="s">&#39;tor.exe&#39;</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">isfile</span><span class="p">(</span><span class="n">torbin</span><span class="p">)</span> <span class="ow">and</span> <span class="n">os</span><span class="o">.</span><span class="n">access</span><span class="p">(</span><span class="n">torbin</span><span class="p">,</span> <span class="n">os</span><span class="o">.</span><span class="n">X_OK</span><span class="p">):</span>
+                    <span class="n">tor_binary</span> <span class="o">=</span> <span class="n">torbin</span>
+                    <span class="k">break</span>
+
+        <span class="n">d</span> <span class="o">=</span> <span class="n">txtorcon</span><span class="o">.</span><span class="n">launch_tor</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="p">,</span>
+            <span class="n">reactor</span><span class="p">,</span>
+            <span class="n">tor_binary</span><span class="o">=</span><span class="n">tor_binary</span><span class="p">,</span>
+            <span class="n">progress_updates</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">progress</span><span class="p">)</span>
+        <span class="n">d</span><span class="o">.</span><span class="n">addCallback</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">launched</span><span class="p">)</span><span class="o">.</span><span class="n">addErrback</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">error</span><span class="p">)</span>
+
+    <span class="nd">@defer.inlineCallbacks</span>
+<div class="viewcode-block" id="TorLauncher.launched"><a class="viewcode-back" href="../../../potator.tor.html#potator.tor.control.TorLauncher.launched">[docs]</a>    <span class="k">def</span> <span class="nf">launched</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">process_proto</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Callback when Tor is launched</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">log</span><span class="o">.</span><span class="n">msg</span><span class="p">(</span><span class="s">&quot;Tor has launched.&quot;</span><span class="p">)</span>
+        <span class="n">log</span><span class="o">.</span><span class="n">msg</span><span class="p">(</span><span class="s">&quot;SocksPort is on &quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">SocksPort</span><span class="p">)</span>
+        <span class="n">hidden_service_dir</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">DataDirectory</span><span class="p">,</span> <span class="s">&#39;hidden_service&#39;</span><span class="p">)</span>
+
+        <span class="c"># Starts the listening server</span>
+        <span class="n">endpoint</span> <span class="o">=</span> <span class="n">txtorcon</span><span class="o">.</span><span class="n">TCPHiddenServiceEndpoint</span><span class="p">(</span>
+            <span class="n">reactor</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">server</span><span class="o">.</span><span class="n">potator</span><span class="o">.</span><span class="n">config</span><span class="p">[</span><span class="s">&#39;HIDDEN_SERVICE_PORT&#39;</span><span class="p">],</span>
+            <span class="n">hidden_service_dir</span><span class="o">=</span><span class="n">hidden_service_dir</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">port</span> <span class="o">=</span> <span class="k">yield</span> <span class="n">endpoint</span><span class="o">.</span><span class="n">listen</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">server</span><span class="o">.</span><span class="n">factory</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">server</span><span class="o">.</span><span class="n">potator</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">setOnionUrl</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">server</span><span class="o">.</span><span class="n">potator</span><span class="o">.</span><span class="n">config</span><span class="p">[</span><span class="s">&#39;IP_ADDRESS&#39;</span><span class="p">],</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">port</span><span class="o">.</span><span class="n">getHost</span><span class="p">()</span><span class="o">.</span><span class="n">onion_uri</span><span class="p">)</span>
+</div>
+<div class="viewcode-block" id="TorLauncher.error"><a class="viewcode-back" href="../../../potator.tor.html#potator.tor.control.TorLauncher.error">[docs]</a>    <span class="k">def</span> <span class="nf">error</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">failure</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Callback that prints errors when they occur</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">log</span><span class="o">.</span><span class="n">msg</span><span class="p">(</span><span class="s">&quot;There was an error&quot;</span><span class="p">,</span> <span class="n">failure</span><span class="o">.</span><span class="n">getErrorMessage</span><span class="p">())</span>
+        <span class="n">reactor</span><span class="o">.</span><span class="n">stop</span><span class="p">()</span>
+</div>
+<div class="viewcode-block" id="TorLauncher.progress"><a class="viewcode-back" href="../../../potator.tor.html#potator.tor.control.TorLauncher.progress">[docs]</a>    <span class="k">def</span> <span class="nf">progress</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">percent</span><span class="p">,</span> <span class="n">tag</span><span class="p">,</span> <span class="n">summary</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Callback that displays Tor&#39;s connection progress</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">ticks</span> <span class="o">=</span> <span class="nb">int</span><span class="p">((</span><span class="n">percent</span> <span class="o">/</span> <span class="mf">100.0</span><span class="p">)</span> <span class="o">*</span> <span class="mf">10.0</span><span class="p">)</span>
+        <span class="n">prog</span> <span class="o">=</span> <span class="p">(</span><span class="n">ticks</span> <span class="o">*</span> <span class="s">&#39;#&#39;</span><span class="p">)</span> <span class="o">+</span> <span class="p">((</span><span class="mi">10</span> <span class="o">-</span> <span class="n">ticks</span><span class="p">)</span> <span class="o">*</span> <span class="s">&#39;.&#39;</span><span class="p">)</span>
+        <span class="n">log</span><span class="o">.</span><span class="n">msg</span><span class="p">(</span><span class="s">&#39;</span><span class="si">%s</span><span class="s"> </span><span class="si">%s</span><span class="s">&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="n">prog</span><span class="p">,</span> <span class="n">summary</span><span class="p">))</span></div></div>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2015, Mitchel Cabuloy, Richmond Liclican, Kevin Olsson, Justin Pleyto.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.3.1</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.3</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>

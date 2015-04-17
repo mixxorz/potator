@@ -1,0 +1,368 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>potator.tuntap.tuntap &mdash; Potator 0.1.0 documentation</title>
+    
+    <link rel="stylesheet" href="../../../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../',
+        VERSION:     '0.1.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../../_static/doctools.js"></script>
+    <link rel="top" title="Potator 0.1.0 documentation" href="../../../index.html" />
+    <link rel="up" title="Module code" href="../../index.html" />
+   
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9">
+
+  </head>
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../../index.html">Potator 0.1.0 documentation</a> &raquo;</li>
+          <li class="nav-item nav-item-1"><a href="../../index.html" accesskey="U">Module code</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for potator.tuntap.tuntap</h1><div class="highlight"><pre>
+<span class="sd">&quot;&quot;&quot; Non-asynchronous module that deals with tuntap communications</span>
+
+<span class="sd">Black magic. Do not touch.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="kn">import</span> <span class="nn">_winreg</span> <span class="kn">as</span> <span class="nn">reg</span>
+<span class="kn">import</span> <span class="nn">threading</span>
+<span class="kn">from</span> <span class="nn">Queue</span> <span class="kn">import</span> <span class="n">Queue</span>
+<span class="kn">from</span> <span class="nn">struct</span> <span class="kn">import</span> <span class="n">unpack</span>
+
+<span class="kn">import</span> <span class="nn">ipaddr</span>
+<span class="kn">import</span> <span class="nn">pythoncom</span>
+<span class="kn">import</span> <span class="nn">pywintypes</span>
+<span class="kn">import</span> <span class="nn">win32event</span>
+<span class="kn">import</span> <span class="nn">win32file</span>
+<span class="kn">import</span> <span class="nn">wmi</span>
+<span class="kn">from</span> <span class="nn">impacket</span> <span class="kn">import</span> <span class="n">ImpactDecoder</span>
+<span class="kn">from</span> <span class="nn">twisted.internet</span> <span class="kn">import</span> <span class="n">defer</span><span class="p">,</span> <span class="n">task</span><span class="p">,</span> <span class="n">threads</span><span class="p">,</span> <span class="n">reactor</span>
+
+
+<div class="viewcode-block" id="TunInterface"><a class="viewcode-back" href="../../../potator.tuntap.html#potator.tuntap.tuntap.TunInterface">[docs]</a><span class="k">class</span> <span class="nc">TunInterface</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot; Manages incoming and outgoing tuntap data</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">potator</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">potator</span> <span class="o">=</span> <span class="n">potator</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">sent_bytes</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">received_bytes</span> <span class="o">=</span> <span class="mi">0</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">readThread</span> <span class="o">=</span> <span class="n">ReadThread</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">writeThread</span> <span class="o">=</span> <span class="n">WriteThread</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">started</span> <span class="o">=</span> <span class="bp">False</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">failed</span> <span class="o">=</span> <span class="bp">False</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">writeBuffer</span> <span class="o">=</span> <span class="n">Queue</span><span class="p">()</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_runner_loop</span> <span class="o">=</span> <span class="n">task</span><span class="o">.</span><span class="n">LoopingCall</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_runner</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_runner_loop</span><span class="o">.</span><span class="n">start</span><span class="p">(</span><span class="mf">5.0</span><span class="p">)</span>
+
+<div class="viewcode-block" id="TunInterface.stop"><a class="viewcode-back" href="../../../potator.tuntap.html#potator.tuntap.tuntap.TunInterface.stop">[docs]</a>    <span class="k">def</span> <span class="nf">stop</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Stops the tuntap threads and closes the handler</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">readThread</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">writeThread</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+            <span class="n">win32file</span><span class="o">.</span><span class="n">CloseHandle</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">tuntap</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
+            <span class="k">pass</span>
+</div>
+    <span class="nd">@defer.inlineCallbacks</span>
+    <span class="k">def</span> <span class="nf">_runner</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">readThread</span><span class="o">.</span><span class="n">goOn</span> <span class="ow">or</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">writeThread</span><span class="o">.</span><span class="n">goOn</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">failed</span> <span class="o">=</span> <span class="bp">True</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">failed</span> <span class="ow">or</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">started</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">started</span> <span class="o">=</span> <span class="bp">True</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">failed</span> <span class="o">=</span> <span class="bp">False</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">stop</span><span class="p">()</span>
+
+            <span class="k">try</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">tuntap</span> <span class="o">=</span> <span class="k">yield</span> <span class="n">threads</span><span class="o">.</span><span class="n">deferToThread</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_openTunTap</span><span class="p">)</span>
+            <span class="k">except</span> <span class="ne">Exception</span><span class="p">,</span> <span class="n">e</span><span class="p">:</span>
+                <span class="k">print</span> <span class="s">&#39;ERROR:&#39;</span><span class="p">,</span> <span class="n">e</span>
+                <span class="n">reactor</span><span class="o">.</span><span class="n">stop</span><span class="p">()</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">readThread</span> <span class="o">=</span> <span class="n">ReadThread</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">writeThread</span> <span class="o">=</span> <span class="n">WriteThread</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">readThread</span><span class="o">.</span><span class="n">daemon</span> <span class="o">=</span> <span class="bp">True</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">writeThread</span><span class="o">.</span><span class="n">daemon</span> <span class="o">=</span> <span class="bp">True</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">readThread</span><span class="o">.</span><span class="n">start</span><span class="p">()</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">writeThread</span><span class="o">.</span><span class="n">start</span><span class="p">()</span>
+
+    <span class="k">def</span> <span class="nf">_openTunTap</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">pythoncom</span><span class="o">.</span><span class="n">CoInitialize</span><span class="p">()</span>
+
+        <span class="n">interface</span> <span class="o">=</span> <span class="n">get_available_tuntap_interface</span><span class="p">()</span>
+
+        <span class="n">tuntap</span> <span class="o">=</span> <span class="n">win32file</span><span class="o">.</span><span class="n">CreateFile</span><span class="p">(</span>
+            <span class="s">r&#39;</span><span class="se">\\</span><span class="s">.\Global\</span><span class="si">%s</span><span class="s">.tap&#39;</span> <span class="o">%</span> <span class="n">interface</span><span class="o">.</span><span class="n">SettingID</span><span class="p">,</span>
+            <span class="n">win32file</span><span class="o">.</span><span class="n">GENERIC_READ</span> <span class="o">|</span> <span class="n">win32file</span><span class="o">.</span><span class="n">GENERIC_WRITE</span><span class="p">,</span>
+            <span class="n">win32file</span><span class="o">.</span><span class="n">FILE_SHARE_READ</span> <span class="o">|</span> <span class="n">win32file</span><span class="o">.</span><span class="n">FILE_SHARE_WRITE</span><span class="p">,</span>
+            <span class="bp">None</span><span class="p">,</span>
+            <span class="n">win32file</span><span class="o">.</span><span class="n">OPEN_EXISTING</span><span class="p">,</span>
+            <span class="n">win32file</span><span class="o">.</span><span class="n">FILE_ATTRIBUTE_SYSTEM</span> <span class="o">|</span> <span class="n">win32file</span><span class="o">.</span><span class="n">FILE_FLAG_OVERLAPPED</span><span class="p">,</span>
+            <span class="bp">None</span>
+        <span class="p">)</span>
+
+        <span class="c"># Rename interface</span>
+        <span class="n">connection_key</span> <span class="o">=</span> <span class="n">INSTANCE_KEY</span> <span class="o">+</span> <span class="s">&#39;</span><span class="se">\\</span><span class="s">&#39;</span> <span class="o">+</span> \
+            <span class="n">interface</span><span class="o">.</span><span class="n">SettingID</span> <span class="o">+</span> <span class="s">&#39;</span><span class="se">\\</span><span class="s">Connection&#39;</span>
+        <span class="k">with</span> <span class="n">reg</span><span class="o">.</span><span class="n">OpenKey</span><span class="p">(</span><span class="n">reg</span><span class="o">.</span><span class="n">HKEY_LOCAL_MACHINE</span><span class="p">,</span> <span class="n">connection_key</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span>
+                         <span class="n">reg</span><span class="o">.</span><span class="n">KEY_ALL_ACCESS</span><span class="p">)</span> <span class="k">as</span> <span class="n">instance</span><span class="p">:</span>
+            <span class="n">reg</span><span class="o">.</span><span class="n">SetValueEx</span><span class="p">(</span>
+                <span class="n">instance</span><span class="p">,</span> <span class="s">&#39;Name&#39;</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="n">reg</span><span class="o">.</span><span class="n">REG_SZ</span><span class="p">,</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">potator</span><span class="o">.</span><span class="n">config</span><span class="p">[</span><span class="s">&#39;NETWORK_ID&#39;</span><span class="p">])</span>
+            <span class="k">print</span> <span class="s">&#39;Using interface&#39;</span><span class="p">,</span> <span class="n">reg</span><span class="o">.</span><span class="n">QueryValueEx</span><span class="p">(</span><span class="n">instance</span><span class="p">,</span> <span class="s">&#39;Name&#39;</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+
+        <span class="c"># have Windows consider the interface now connected</span>
+        <span class="n">win32file</span><span class="o">.</span><span class="n">DeviceIoControl</span><span class="p">(</span>
+            <span class="n">tuntap</span><span class="p">,</span>
+            <span class="n">TAP_IOCTL_SET_MEDIA_STATUS</span><span class="p">,</span>
+            <span class="s">&#39;</span><span class="se">\x01\x00\x00\x00</span><span class="s">&#39;</span><span class="p">,</span>
+            <span class="bp">None</span>
+        <span class="p">)</span>
+
+        <span class="c"># prepare the parameter passed to the TAP_IOCTL_CONFIG_TUN commmand.</span>
+        <span class="c"># This needs to be a 12-character long string representing</span>
+        <span class="c"># - the tun interface&#39;s IPv4 address (4 characters)</span>
+        <span class="c"># - the tun interface&#39;s IPv4 network address (4 characters)</span>
+        <span class="c"># - the tun interface&#39;s IPv4 network mask (4 characters)</span>
+
+        <span class="n">ip_address</span> <span class="o">=</span> <span class="n">ipaddr</span><span class="o">.</span><span class="n">IPv4Network</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">potator</span><span class="o">.</span><span class="n">config</span><span class="p">[</span><span class="s">&#39;IP_NETWORK&#39;</span><span class="p">])</span>
+        <span class="n">TUN_IPv4_ADDRESS</span> <span class="o">=</span> <span class="p">[</span><span class="nb">int</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="nb">str</span><span class="p">(</span><span class="n">ip_address</span><span class="o">.</span><span class="n">ip</span><span class="p">)</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s">&#39;.&#39;</span><span class="p">)]</span>
+        <span class="n">TUN_IPv4_NETWORK</span> <span class="o">=</span> <span class="p">[</span><span class="nb">int</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="nb">str</span><span class="p">(</span><span class="n">ip_address</span><span class="o">.</span><span class="n">network</span><span class="p">)</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s">&#39;.&#39;</span><span class="p">)]</span>
+        <span class="n">TUN_IPv4_NETMASK</span> <span class="o">=</span> <span class="p">[</span><span class="nb">int</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="nb">str</span><span class="p">(</span><span class="n">ip_address</span><span class="o">.</span><span class="n">netmask</span><span class="p">)</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s">&#39;.&#39;</span><span class="p">)]</span>
+
+        <span class="n">configTunParam</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">configTunParam</span> <span class="o">+=</span> <span class="n">TUN_IPv4_ADDRESS</span>
+        <span class="n">configTunParam</span> <span class="o">+=</span> <span class="n">TUN_IPv4_NETWORK</span>
+        <span class="n">configTunParam</span> <span class="o">+=</span> <span class="n">TUN_IPv4_NETMASK</span>
+        <span class="n">configTunParam</span> <span class="o">=</span> <span class="s">&#39;&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="nb">chr</span><span class="p">(</span><span class="n">b</span><span class="p">)</span> <span class="k">for</span> <span class="n">b</span> <span class="ow">in</span> <span class="n">configTunParam</span><span class="p">])</span>
+
+        <span class="c"># switch to TUN mode (by default the interface runs in TAP mode)</span>
+        <span class="n">win32file</span><span class="o">.</span><span class="n">DeviceIoControl</span><span class="p">(</span>
+            <span class="n">tuntap</span><span class="p">,</span>
+            <span class="n">TAP_IOCTL_CONFIG_TUN</span><span class="p">,</span>
+            <span class="n">configTunParam</span><span class="p">,</span>
+            <span class="bp">None</span>
+        <span class="p">)</span>
+
+        <span class="c"># Set the IP address and Subnet mask statically</span>
+        <span class="n">interface</span><span class="o">.</span><span class="n">EnableStatic</span><span class="p">(</span>
+            <span class="n">IPAddress</span><span class="o">=</span><span class="p">[</span><span class="nb">unicode</span><span class="p">(</span><span class="n">ip_address</span><span class="o">.</span><span class="n">ip</span><span class="p">)],</span>
+            <span class="n">SubnetMask</span><span class="o">=</span><span class="p">[</span><span class="nb">unicode</span><span class="p">(</span><span class="n">ip_address</span><span class="o">.</span><span class="n">netmask</span><span class="p">)])</span>
+
+        <span class="c"># return the handler of the TUN interface</span>
+        <span class="k">return</span> <span class="n">tuntap</span>
+
+</div>
+<span class="n">ADAPTER_KEY</span> <span class="o">=</span> <span class="s">r&#39;SYSTEM\CurrentControlSet\Control\Class\{4D36E972-E325-11CE-BFC1-08002BE10318}&#39;</span>
+<span class="n">INSTANCE_KEY</span> <span class="o">=</span> <span class="s">r&#39;SYSTEM\CurrentControlSet\Control\Network\{4D36E972-E325-11CE-BFC1-08002BE10318}&#39;</span>
+
+
+<span class="n">TUNTAP_COMPONENT_ID</span> <span class="o">=</span> <span class="s">&#39;tap0901&#39;</span>
+
+
+<div class="viewcode-block" id="CTL_CODE"><a class="viewcode-back" href="../../../potator.tuntap.html#potator.tuntap.tuntap.CTL_CODE">[docs]</a><span class="k">def</span> <span class="nf">CTL_CODE</span><span class="p">(</span><span class="n">device_type</span><span class="p">,</span> <span class="n">function</span><span class="p">,</span> <span class="n">method</span><span class="p">,</span> <span class="n">access</span><span class="p">):</span>
+    <span class="k">return</span> <span class="p">(</span><span class="n">device_type</span> <span class="o">&lt;&lt;</span> <span class="mi">16</span><span class="p">)</span> <span class="o">|</span> <span class="p">(</span><span class="n">access</span> <span class="o">&lt;&lt;</span> <span class="mi">14</span><span class="p">)</span> <span class="o">|</span> <span class="p">(</span><span class="n">function</span> <span class="o">&lt;&lt;</span> <span class="mi">2</span><span class="p">)</span> <span class="o">|</span> <span class="n">method</span>
+
+</div>
+<div class="viewcode-block" id="TAP_CONTROL_CODE"><a class="viewcode-back" href="../../../potator.tuntap.html#potator.tuntap.tuntap.TAP_CONTROL_CODE">[docs]</a><span class="k">def</span> <span class="nf">TAP_CONTROL_CODE</span><span class="p">(</span><span class="n">request</span><span class="p">,</span> <span class="n">method</span><span class="p">):</span>
+    <span class="k">return</span> <span class="n">CTL_CODE</span><span class="p">(</span><span class="mi">34</span><span class="p">,</span> <span class="n">request</span><span class="p">,</span> <span class="n">method</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+</div>
+<span class="n">TAP_IOCTL_SET_MEDIA_STATUS</span> <span class="o">=</span> <span class="n">TAP_CONTROL_CODE</span><span class="p">(</span><span class="mi">6</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+<span class="n">TAP_IOCTL_CONFIG_TUN</span> <span class="o">=</span> <span class="n">TAP_CONTROL_CODE</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="get_available_tuntap_interface"><a class="viewcode-back" href="../../../potator.tuntap.html#potator.tuntap.tuntap.get_available_tuntap_interface">[docs]</a><span class="k">def</span> <span class="nf">get_available_tuntap_interface</span><span class="p">():</span>
+    <span class="n">nic_configs</span> <span class="o">=</span> <span class="n">wmi</span><span class="o">.</span><span class="n">WMI</span><span class="p">()</span><span class="o">.</span><span class="n">Win32_NetworkAdapterConfiguration</span><span class="p">()</span>
+    <span class="k">for</span> <span class="n">interface</span> <span class="ow">in</span> <span class="n">nic_configs</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">interface</span><span class="o">.</span><span class="n">ServiceName</span> <span class="o">==</span> <span class="s">&#39;tap0901&#39;</span><span class="p">:</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">interface</span><span class="o">.</span><span class="n">IPEnabled</span><span class="p">:</span>
+                <span class="k">return</span> <span class="n">interface</span>
+
+    <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s">&quot;No available TAP-Windows adapter&quot;</span><span class="p">)</span>
+
+
+<span class="c">#============================ threads =========================================</span></div>
+<div class="viewcode-block" id="ReadThread"><a class="viewcode-back" href="../../../potator.tuntap.html#potator.tuntap.tuntap.ReadThread">[docs]</a><span class="k">class</span> <span class="nc">ReadThread</span><span class="p">(</span><span class="n">threading</span><span class="o">.</span><span class="n">Thread</span><span class="p">):</span>
+
+    <span class="c"># TODO: Change text</span>
+    <span class="sd">&#39;&#39;&#39; Thread which continously reads input from a TUN interface.</span>
+
+<span class="sd">    The parsed IP packet is passed onto \</span>
+<span class="sd">    :func:`potator.main.Potator.outgoingCallback`</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+
+    <span class="n">ETHERNET_MTU</span> <span class="o">=</span> <span class="mi">1500</span>
+    <span class="n">IPv6_HEADER_LENGTH</span> <span class="o">=</span> <span class="mi">40</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">interface</span><span class="p">):</span>
+
+        <span class="c"># store params</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">interface</span> <span class="o">=</span> <span class="n">interface</span>
+
+        <span class="c"># local variables</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">goOn</span> <span class="o">=</span> <span class="bp">False</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">overlappedRx</span> <span class="o">=</span> <span class="n">pywintypes</span><span class="o">.</span><span class="n">OVERLAPPED</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">overlappedRx</span><span class="o">.</span><span class="n">hEvent</span> <span class="o">=</span> <span class="n">win32event</span><span class="o">.</span><span class="n">CreateEvent</span><span class="p">(</span><span class="bp">None</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="bp">None</span><span class="p">)</span>
+
+        <span class="c"># initialize parent</span>
+        <span class="n">threading</span><span class="o">.</span><span class="n">Thread</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+
+        <span class="c"># give this thread a name</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="s">&#39;readThread&#39;</span>
+
+<div class="viewcode-block" id="ReadThread.run"><a class="viewcode-back" href="../../../potator.tuntap.html#potator.tuntap.tuntap.ReadThread.run">[docs]</a>    <span class="k">def</span> <span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">goOn</span> <span class="o">=</span> <span class="bp">True</span>
+
+        <span class="n">rxbuffer</span> <span class="o">=</span> <span class="n">win32file</span><span class="o">.</span><span class="n">AllocateReadBuffer</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ETHERNET_MTU</span><span class="p">)</span>
+
+        <span class="k">while</span> <span class="bp">self</span><span class="o">.</span><span class="n">goOn</span><span class="p">:</span>
+
+            <span class="c"># wait for data</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">l</span><span class="p">,</span> <span class="n">p</span> <span class="o">=</span> <span class="n">win32file</span><span class="o">.</span><span class="n">ReadFile</span><span class="p">(</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">interface</span><span class="o">.</span><span class="n">tuntap</span><span class="p">,</span> <span class="n">rxbuffer</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">overlappedRx</span><span class="p">)</span>
+            <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
+                <span class="k">print</span> <span class="s">&#39;Tun adapter failed. Recovering...&#39;</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">goOn</span> <span class="o">=</span> <span class="bp">False</span>
+                <span class="k">break</span>
+
+            <span class="n">win32event</span><span class="o">.</span><span class="n">WaitForSingleObject</span><span class="p">(</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">overlappedRx</span><span class="o">.</span><span class="n">hEvent</span><span class="p">,</span> <span class="n">win32event</span><span class="o">.</span><span class="n">INFINITE</span><span class="p">)</span>
+
+            <span class="bp">self</span><span class="o">.</span><span class="n">overlappedRx</span><span class="o">.</span><span class="n">Offset</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">overlappedRx</span><span class="o">.</span><span class="n">Offset</span> <span class="o">+</span> <span class="nb">len</span><span class="p">(</span><span class="n">p</span><span class="p">)</span>
+
+            <span class="n">ip_header</span> <span class="o">=</span> <span class="n">p</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="mi">20</span><span class="p">]</span>
+            <span class="n">iph</span> <span class="o">=</span> <span class="n">unpack</span><span class="p">(</span><span class="s">&#39;!BBHHHBBH4s4s&#39;</span><span class="p">,</span> <span class="n">ip_header</span><span class="p">)</span>
+            <span class="n">version_ihl</span> <span class="o">=</span> <span class="n">iph</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+            <span class="n">version</span> <span class="o">=</span> <span class="n">version_ihl</span> <span class="o">&gt;&gt;</span> <span class="mi">4</span>  <span class="c"># ip version</span>
+            <span class="n">ihl</span> <span class="o">=</span> <span class="n">version_ihl</span> <span class="o">&amp;</span> <span class="mh">0xf</span>
+
+            <span class="c"># check if the IP Header exists</span>
+            <span class="k">if</span> <span class="n">ihl</span> <span class="ow">and</span> <span class="n">version</span> <span class="o">==</span> <span class="mi">4</span><span class="p">:</span>
+
+                <span class="n">decoder</span> <span class="o">=</span> <span class="n">ImpactDecoder</span><span class="o">.</span><span class="n">IPDecoder</span><span class="p">()</span>
+                <span class="n">ip_packet</span> <span class="o">=</span> <span class="n">decoder</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="n">p</span><span class="p">)</span>
+
+                <span class="bp">self</span><span class="o">.</span><span class="n">interface</span><span class="o">.</span><span class="n">potator</span><span class="o">.</span><span class="n">outgoingCallback</span><span class="p">(</span><span class="n">ip_packet</span><span class="p">)</span>
+</div>
+<div class="viewcode-block" id="ReadThread.close"><a class="viewcode-back" href="../../../potator.tuntap.html#potator.tuntap.tuntap.ReadThread.close">[docs]</a>    <span class="k">def</span> <span class="nf">close</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">goOn</span> <span class="o">=</span> <span class="bp">False</span>
+
+</div></div>
+<div class="viewcode-block" id="WriteThread"><a class="viewcode-back" href="../../../potator.tuntap.html#potator.tuntap.tuntap.WriteThread">[docs]</a><span class="k">class</span> <span class="nc">WriteThread</span><span class="p">(</span><span class="n">threading</span><span class="o">.</span><span class="n">Thread</span><span class="p">):</span>
+
+    <span class="sd">&#39;&#39;&#39; Thread that writes data out to tuntap.</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">interface</span><span class="p">):</span>
+
+        <span class="c"># store params</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">interface</span> <span class="o">=</span> <span class="n">interface</span>
+
+        <span class="c"># local variables</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">goOn</span> <span class="o">=</span> <span class="bp">False</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">overlappedTx</span> <span class="o">=</span> <span class="n">pywintypes</span><span class="o">.</span><span class="n">OVERLAPPED</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">overlappedTx</span><span class="o">.</span><span class="n">hEvent</span> <span class="o">=</span> <span class="n">win32event</span><span class="o">.</span><span class="n">CreateEvent</span><span class="p">(</span><span class="bp">None</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="bp">None</span><span class="p">)</span>
+
+        <span class="c"># initialize parent</span>
+        <span class="n">threading</span><span class="o">.</span><span class="n">Thread</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+
+        <span class="c"># give this thread a name</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="s">&#39;writeThread&#39;</span>
+
+<div class="viewcode-block" id="WriteThread.run"><a class="viewcode-back" href="../../../potator.tuntap.html#potator.tuntap.tuntap.WriteThread.run">[docs]</a>    <span class="k">def</span> <span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">goOn</span> <span class="o">=</span> <span class="bp">True</span>
+
+        <span class="k">while</span> <span class="bp">self</span><span class="o">.</span><span class="n">goOn</span><span class="p">:</span>
+            <span class="c"># Receive packet from packet handler</span>
+            <span class="n">p</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">interface</span><span class="o">.</span><span class="n">writeBuffer</span><span class="o">.</span><span class="n">get</span><span class="p">()</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">interface</span><span class="o">.</span><span class="n">received_bytes</span> <span class="o">+=</span> <span class="n">p</span><span class="o">.</span><span class="n">get_size</span><span class="p">()</span>
+            <span class="c"># Write to tuntap (transmit)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">transmit</span><span class="p">(</span><span class="n">p</span><span class="o">.</span><span class="n">get_packet</span><span class="p">())</span>
+</div>
+<div class="viewcode-block" id="WriteThread.close"><a class="viewcode-back" href="../../../potator.tuntap.html#potator.tuntap.tuntap.WriteThread.close">[docs]</a>    <span class="k">def</span> <span class="nf">close</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">goOn</span> <span class="o">=</span> <span class="bp">False</span>
+</div>
+<div class="viewcode-block" id="WriteThread.transmit"><a class="viewcode-back" href="../../../potator.tuntap.html#potator.tuntap.tuntap.WriteThread.transmit">[docs]</a>    <span class="k">def</span> <span class="nf">transmit</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dataToTransmit</span><span class="p">):</span>
+
+        <span class="c"># write over tuntap interface</span>
+        <span class="n">win32file</span><span class="o">.</span><span class="n">WriteFile</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">interface</span><span class="o">.</span><span class="n">tuntap</span><span class="p">,</span> <span class="n">dataToTransmit</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">overlappedTx</span><span class="p">)</span>
+        <span class="n">win32event</span><span class="o">.</span><span class="n">WaitForSingleObject</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">overlappedTx</span><span class="o">.</span><span class="n">hEvent</span><span class="p">,</span> <span class="n">win32event</span><span class="o">.</span><span class="n">INFINITE</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">overlappedTx</span><span class="o">.</span><span class="n">Offset</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">overlappedTx</span><span class="o">.</span><span class="n">Offset</span> <span class="o">+</span> \
+            <span class="nb">len</span><span class="p">(</span><span class="n">dataToTransmit</span><span class="p">)</span></div></div>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2015, Mitchel Cabuloy, Richmond Liclican, Kevin Olsson, Justin Pleyto.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.3.1</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.3</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>

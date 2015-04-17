@@ -1,0 +1,523 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>potator package &mdash; Potator 0.1.0 documentation</title>
+    
+    <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '0.1.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="Potator 0.1.0 documentation" href="index.html" />
+    <link rel="next" title="potator.protocol package" href="potator.protocol.html" />
+    <link rel="prev" title="User Manual" href="user_manual.html" />
+   
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9">
+
+  </head>
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="potator.protocol.html" title="potator.protocol package"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="user_manual.html" title="User Manual"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">Potator 0.1.0 documentation</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="potator-package">
+<h1>potator package<a class="headerlink" href="#potator-package" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="subpackages">
+<h2>Subpackages<a class="headerlink" href="#subpackages" title="Permalink to this headline">¶</a></h2>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="potator.protocol.html">potator.protocol package</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="potator.protocol.html#submodules">Submodules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="potator.protocol.html#module-potator.protocol.potator_pb2">potator.protocol.potator_pb2 module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="potator.protocol.html#module-potator.protocol">Module contents</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="potator.tor.html">potator.tor package</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="potator.tor.html#submodules">Submodules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="potator.tor.html#module-potator.tor.control">potator.tor.control module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="potator.tor.html#module-potator.tor.server">potator.tor.server module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="potator.tor.html#module-potator.tor">Module contents</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="potator.tuntap.html">potator.tuntap package</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="potator.tuntap.html#submodules">Submodules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="potator.tuntap.html#module-potator.tuntap.tuntap">potator.tuntap.tuntap module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="potator.tuntap.html#module-potator.tuntap">Module contents</a></li>
+</ul>
+</li>
+</ul>
+</div>
+</div>
+<div class="section" id="submodules">
+<h2>Submodules<a class="headerlink" href="#submodules" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="module-potator.api">
+<span id="potator-api-module"></span><h2>potator.api module<a class="headerlink" href="#module-potator.api" title="Permalink to this headline">¶</a></h2>
+<p>Potator API Module</p>
+<p>This module handles API interactions via JSONRPC</p>
+<dl class="class">
+<dt id="potator.api.PotatorAPI">
+<em class="property">class </em><code class="descclassname">potator.api.</code><code class="descname">PotatorAPI</code><span class="sig-paren">(</span><em>potator</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/potator/api.html#PotatorAPI"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#potator.api.PotatorAPI" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">txjsonrpc.web.jsonrpc.JSONRPC</span></code></p>
+<p>Twisted Module that receives and responds to JSONRPC connections</p>
+<dl class="method">
+<dt id="potator.api.PotatorAPI.jsonrpc_get_config">
+<code class="descname">jsonrpc_get_config</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/potator/api.html#PotatorAPI.jsonrpc_get_config"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#potator.api.PotatorAPI.jsonrpc_get_config" title="Permalink to this definition">¶</a></dt>
+<dd><p>Responds with this Potator instance&#8217;s configuration</p>
+<p>Response: Dictionary containing the Potator configuration</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="potator.api.PotatorAPI.jsonrpc_get_mappings">
+<code class="descname">jsonrpc_get_mappings</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/potator/api.html#PotatorAPI.jsonrpc_get_mappings"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#potator.api.PotatorAPI.jsonrpc_get_mappings" title="Permalink to this definition">¶</a></dt>
+<dd><p>Responds with the Onion Url - IP Address mappings</p>
+<dl class="docutils">
+<dt>Response: The Onion Url - IP Address mappings of this instance of</dt>
+<dd>Potator</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="potator.api.PotatorAPI.jsonrpc_greeting">
+<code class="descname">jsonrpc_greeting</code><span class="sig-paren">(</span><em>onion_url</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/potator/api.html#PotatorAPI.jsonrpc_greeting"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#potator.api.PotatorAPI.jsonrpc_greeting" title="Permalink to this definition">¶</a></dt>
+<dd><p>Sends an OURP greeting to onion_url</p>
+<p>Response: None</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="potator.api.PotatorAPI.jsonrpc_ping">
+<code class="descname">jsonrpc_ping</code><span class="sig-paren">(</span><em>onion_url</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/potator/api.html#PotatorAPI.jsonrpc_ping"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#potator.api.PotatorAPI.jsonrpc_ping" title="Permalink to this definition">¶</a></dt>
+<dd><p>Sends an OURP ping to onion_url</p>
+<p>Response: None</p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-potator.database">
+<span id="potator-database-module"></span><h2>potator.database module<a class="headerlink" href="#module-potator.database" title="Permalink to this headline">¶</a></h2>
+<p>Handles temporary storage of Onion URL - IP address mappings</p>
+<dl class="class">
+<dt id="potator.database.OnionIPMapper">
+<em class="property">class </em><code class="descclassname">potator.database.</code><code class="descname">OnionIPMapper</code><a class="reference internal" href="_modules/potator/database.html#OnionIPMapper"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#potator.database.OnionIPMapper" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">object</span></code></p>
+<p>Holds mappings and provides an API to get and set mappings</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Variables:</th><td class="field-body"><strong>mappings</strong> &#8211; A Python dictionary with the key as the IP address, and                     the value as the onion URL</td>
+</tr>
+</tbody>
+</table>
+<dl class="method">
+<dt id="potator.database.OnionIPMapper.getAllMappings">
+<code class="descname">getAllMappings</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/potator/database.html#OnionIPMapper.getAllMappings"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#potator.database.OnionIPMapper.getAllMappings" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get the mappings class variable</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">The mappings class variable</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body">dict</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="potator.database.OnionIPMapper.getAllOnionUrls">
+<code class="descname">getAllOnionUrls</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/potator/database.html#OnionIPMapper.getAllOnionUrls"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#potator.database.OnionIPMapper.getAllOnionUrls" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get all onion URLs in <code class="code docutils literal"><span class="pre">mappings</span></code></p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">A list of onion URLs</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body">list</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="potator.database.OnionIPMapper.getOnionUrl">
+<code class="descname">getOnionUrl</code><span class="sig-paren">(</span><em>ip_address</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/potator/database.html#OnionIPMapper.getOnionUrl"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#potator.database.OnionIPMapper.getOnionUrl" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get the onion URL that corresponds to the <code class="code docutils literal"><span class="pre">ip_address</span></code></p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>ip_address</strong> (<em>str</em>) &#8211; The IP address</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">The onion URL</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body">str</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="potator.database.OnionIPMapper.setOnionUrl">
+<code class="descname">setOnionUrl</code><span class="sig-paren">(</span><em>ip_address</em>, <em>onion_url</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/potator/database.html#OnionIPMapper.setOnionUrl"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#potator.database.OnionIPMapper.setOnionUrl" title="Permalink to this definition">¶</a></dt>
+<dd><p>Sets a mapping between an IP address and an onion URL</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>ip_address</strong> (<em>str</em>) &#8211; The IP address</li>
+<li><strong>onion_url</strong> (<em>str</em>) &#8211; The onion URL</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-potator.main">
+<span id="potator-main-module"></span><h2>potator.main module<a class="headerlink" href="#module-potator.main" title="Permalink to this headline">¶</a></h2>
+<p>Potator&#8217;s main controller</p>
+<dl class="class">
+<dt id="potator.main.Potator">
+<em class="property">class </em><code class="descclassname">potator.main.</code><code class="descname">Potator</code><span class="sig-paren">(</span><em>args</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/potator/main.html#Potator"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#potator.main.Potator" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">object</span></code></p>
+<p>The main controller. Coordinates between all the modules.</p>
+<dl class="method">
+<dt id="potator.main.Potator.incomingCallback">
+<code class="descname">incomingCallback</code><span class="sig-paren">(</span><em>spore_string</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/potator/main.html#Potator.incomingCallback"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#potator.main.Potator.incomingCallback" title="Permalink to this definition">¶</a></dt>
+<dd><p>Callback when a spore is received from a remote node</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>spore_string</strong> (<em>str</em>) &#8211; The spore encoded string</td>
+</tr>
+</tbody>
+</table>
+<p>The <code class="code docutils literal"><span class="pre">spore</span></code> is decoded from the <code class="code docutils literal"><span class="pre">spore_string</span></code> using         protobuf. <code class="code docutils literal"><span class="pre">spore</span></code> is then passed into         <a class="reference internal" href="#potator.network_dispatcher.NetworkDispatcher.handleDispatch" title="potator.network_dispatcher.NetworkDispatcher.handleDispatch"><code class="xref py py-func docutils literal"><span class="pre">potator.network_dispatcher.NetworkDispatcher.handleDispatch()</span></code></a>.</p>
+<p>Depending on whether the spore contains IP or OURP data, it will then         be passed into the OURP module or Tuntap module.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="potator.main.Potator.outgoingCallback">
+<code class="descname">outgoingCallback</code><span class="sig-paren">(</span><em>packet</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/potator/main.html#Potator.outgoingCallback"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#potator.main.Potator.outgoingCallback" title="Permalink to this definition">¶</a></dt>
+<dd><p>Callback when an outgoing IP packet is received from Tuntap</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>packet</strong> &#8211; The IP packet</td>
+</tr>
+</tbody>
+</table>
+<p>The packet is loaded into a Spore object and encoded into a string         using protobuf. The destination onion URL is acquired from         <a class="reference internal" href="#potator.database.OnionIPMapper.getOnionUrl" title="potator.database.OnionIPMapper.getOnionUrl"><code class="xref py py-func docutils literal"><span class="pre">potator.database.OnionIPMapper.getOnionUrl()</span></code></a>. If the destination         onion URL is not found for the IP address, an OURP request is sent by         calling <a class="reference internal" href="#potator.ourp.OnionUrlResolutionProtocol.sendRequest" title="potator.ourp.OnionUrlResolutionProtocol.sendRequest"><code class="xref py py-func docutils literal"><span class="pre">potator.ourp.OnionUrlResolutionProtocol.sendRequest()</span></code></a>.         If the destination is found, the spore encoded string is sent to its         destination by calling <a class="reference internal" href="potator.tor.html#potator.tor.server.Server.sendSpore" title="potator.tor.server.Server.sendSpore"><code class="xref py py-func docutils literal"><span class="pre">potator.tor.server.Server.sendSpore()</span></code></a>.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="potator.main.Potator.start">
+<code class="descname">start</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/potator/main.html#Potator.start"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#potator.main.Potator.start" title="Permalink to this definition">¶</a></dt>
+<dd><p>Starts Potator</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="potator.main.Potator.stop">
+<code class="descname">stop</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/potator/main.html#Potator.stop"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#potator.main.Potator.stop" title="Permalink to this definition">¶</a></dt>
+<dd><p>Stops Potator, initiates cleanup</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="function">
+<dt id="potator.main.main">
+<code class="descclassname">potator.main.</code><code class="descname">main</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/potator/main.html#main"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#potator.main.main" title="Permalink to this definition">¶</a></dt>
+<dd><p>The main method. Passes arguments, creates an instance of     <a class="reference internal" href="#potator.main.Potator" title="potator.main.Potator"><code class="xref py py-class docutils literal"><span class="pre">Potator</span></code></a>.</p>
+</dd></dl>
+
+</div>
+<div class="section" id="module-potator.network_dispatcher">
+<span id="potator-network-dispatcher-module"></span><h2>potator.network_dispatcher module<a class="headerlink" href="#module-potator.network_dispatcher" title="Permalink to this headline">¶</a></h2>
+<p>Network Dispatcher module</p>
+<dl class="class">
+<dt id="potator.network_dispatcher.NetworkDispatcher">
+<em class="property">class </em><code class="descclassname">potator.network_dispatcher.</code><code class="descname">NetworkDispatcher</code><span class="sig-paren">(</span><em>potator</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/potator/network_dispatcher.html#NetworkDispatcher"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#potator.network_dispatcher.NetworkDispatcher" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">object</span></code></p>
+<p>Network Dispatcher controller. Handles Spore broadcasts.</p>
+<dl class="method">
+<dt id="potator.network_dispatcher.NetworkDispatcher.handleDispatch">
+<code class="descname">handleDispatch</code><span class="sig-paren">(</span><em>spore</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/potator/network_dispatcher.html#NetworkDispatcher.handleDispatch"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#potator.network_dispatcher.NetworkDispatcher.handleDispatch" title="Permalink to this definition">¶</a></dt>
+<dd><p>Handles dispatching of broadcast spores</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">The spore object. If returns none, it means the packet should         be dropped.</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-potator.ourp">
+<span id="potator-ourp-module"></span><h2>potator.ourp module<a class="headerlink" href="#module-potator.ourp" title="Permalink to this headline">¶</a></h2>
+<p>Onion URL Resolution Protocol module. Handles all things OURP.</p>
+<dl class="class">
+<dt id="potator.ourp.OnionUrlResolutionProtocol">
+<em class="property">class </em><code class="descclassname">potator.ourp.</code><code class="descname">OnionUrlResolutionProtocol</code><span class="sig-paren">(</span><em>potator</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/potator/ourp.html#OnionUrlResolutionProtocol"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#potator.ourp.OnionUrlResolutionProtocol" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">object</span></code></p>
+<p>Handles sending and receiving OURP messages.</p>
+<dl class="method">
+<dt id="potator.ourp.OnionUrlResolutionProtocol.processOurp">
+<code class="descname">processOurp</code><span class="sig-paren">(</span><em>ourpData</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/potator/ourp.html#OnionUrlResolutionProtocol.processOurp"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#potator.ourp.OnionUrlResolutionProtocol.processOurp" title="Permalink to this definition">¶</a></dt>
+<dd><p>Responds to received OURP messages</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>ourpData</strong> &#8211; The OURP data</td>
+</tr>
+</tbody>
+</table>
+<p>Different actions are done depending on the type of OURP message         received</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="potator.ourp.OnionUrlResolutionProtocol.sendGreeting">
+<code class="descname">sendGreeting</code><span class="sig-paren">(</span><em>destination</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/potator/ourp.html#OnionUrlResolutionProtocol.sendGreeting"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#potator.ourp.OnionUrlResolutionProtocol.sendGreeting" title="Permalink to this definition">¶</a></dt>
+<dd><p>Sends an OURP greeting to destination</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>destination</strong> (<em>str</em>) &#8211; The onion URL to send the greeting to</td>
+</tr>
+</tbody>
+</table>
+<p>The OURP greeting packet is crafted and sent to the onion URL by         calling <a class="reference internal" href="potator.tor.html#potator.tor.server.Server.sendSpore" title="potator.tor.server.Server.sendSpore"><code class="xref py py-func docutils literal"><span class="pre">potator.tor.server.Server.sendSpore()</span></code></a>.</p>
+<p>The OURP greeting is sent in a loop until Potator receives an OURP         greeting acknowledge.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="potator.ourp.OnionUrlResolutionProtocol.sendGreetingAck">
+<code class="descname">sendGreetingAck</code><span class="sig-paren">(</span><em>destination</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/potator/ourp.html#OnionUrlResolutionProtocol.sendGreetingAck"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#potator.ourp.OnionUrlResolutionProtocol.sendGreetingAck" title="Permalink to this definition">¶</a></dt>
+<dd><p>Sends an OURP greeting acknowledge to destination</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>destination</strong> (<em>str</em>) &#8211; The onion URL to send the greeting acknowledge                                 to</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="potator.ourp.OnionUrlResolutionProtocol.sendReply">
+<code class="descname">sendReply</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/potator/ourp.html#OnionUrlResolutionProtocol.sendReply"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#potator.ourp.OnionUrlResolutionProtocol.sendReply" title="Permalink to this definition">¶</a></dt>
+<dd><p>Sends an OURP reply if a request for the Potator instance&#8217;s IP         address is received</p>
+<p>This method creates the OURP reply packet, wraps it around a spore         and broadcasts it by calling         <a class="reference internal" href="#potator.network_dispatcher.NetworkDispatcher.handleDispatch" title="potator.network_dispatcher.NetworkDispatcher.handleDispatch"><code class="xref py py-func docutils literal"><span class="pre">potator.network_dispatcher.NetworkDispatcher.handleDispatch()</span></code></a></p>
+</dd></dl>
+
+<dl class="method">
+<dt id="potator.ourp.OnionUrlResolutionProtocol.sendRequest">
+<code class="descname">sendRequest</code><span class="sig-paren">(</span><em>ip_address</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/potator/ourp.html#OnionUrlResolutionProtocol.sendRequest"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#potator.ourp.OnionUrlResolutionProtocol.sendRequest" title="Permalink to this definition">¶</a></dt>
+<dd><p>Sends an OURP request broadcast for an IP address</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>ip_addrses</strong> (<em>str</em>) &#8211; The IP address to query</td>
+</tr>
+</tbody>
+</table>
+<p>This method creates the OURP request packet, wraps it around a spore         and broadcasts it by calling         <a class="reference internal" href="#potator.network_dispatcher.NetworkDispatcher.handleDispatch" title="potator.network_dispatcher.NetworkDispatcher.handleDispatch"><code class="xref py py-func docutils literal"><span class="pre">potator.network_dispatcher.NetworkDispatcher.handleDispatch()</span></code></a></p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-potator.ping">
+<span id="potator-ping-module"></span><h2>potator.ping module<a class="headerlink" href="#module-potator.ping" title="Permalink to this headline">¶</a></h2>
+<p>Utility module that can send an internal ping between Potator nodes</p>
+<dl class="class">
+<dt id="potator.ping.PingProtocol">
+<em class="property">class </em><code class="descclassname">potator.ping.</code><code class="descname">PingProtocol</code><span class="sig-paren">(</span><em>potator</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/potator/ping.html#PingProtocol"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#potator.ping.PingProtocol" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">object</span></code></p>
+<p>Handles received pings, and provides an API for sending pings.</p>
+<dl class="method">
+<dt id="potator.ping.PingProtocol.ping">
+<code class="descname">ping</code><span class="sig-paren">(</span><em>destination</em>, <em>count=4</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/potator/ping.html#PingProtocol.ping"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#potator.ping.PingProtocol.ping" title="Permalink to this definition">¶</a></dt>
+<dd><p>Sends a ping to destination</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>destination</strong> (<em>str</em>) &#8211; The onion URL to send the ping to</li>
+<li><strong>count</strong> (<em>int</em>) &#8211; default 4, The number of pings to send.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+<p>This methods sends a ping to <code class="code docutils literal"><span class="pre">destination</span></code> <code class="code docutils literal"><span class="pre">count</span></code> number         of times in 1 second intervals.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="potator.ping.PingProtocol.processPing">
+<code class="descname">processPing</code><span class="sig-paren">(</span><em>ping</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/potator/ping.html#PingProtocol.processPing"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#potator.ping.PingProtocol.processPing" title="Permalink to this definition">¶</a></dt>
+<dd><p>Receives pings and logs their roundtrip time</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>ping</strong> &#8211; The ping</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="potator.ping.PingProtocol.sendPing">
+<code class="descname">sendPing</code><span class="sig-paren">(</span><em>destination</em>, <em>reply=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/potator/ping.html#PingProtocol.sendPing"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#potator.ping.PingProtocol.sendPing" title="Permalink to this definition">¶</a></dt>
+<dd><p>Sends a single ping to destination</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>destination</strong> (<em>str</em>) &#8211; The onion URL to send the ping to</li>
+<li><strong>reply</strong> (<em>bool</em>) &#8211; Whether this ping is a reply ping</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-potator.util">
+<span id="potator-util-module"></span><h2>potator.util module<a class="headerlink" href="#module-potator.util" title="Permalink to this headline">¶</a></h2>
+<p>Utility classes for Potator</p>
+</div>
+<div class="section" id="module-potator">
+<span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-potator" title="Permalink to this headline">¶</a></h2>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">potator package</a><ul>
+<li><a class="reference internal" href="#subpackages">Subpackages</a></li>
+<li><a class="reference internal" href="#submodules">Submodules</a></li>
+<li><a class="reference internal" href="#module-potator.api">potator.api module</a></li>
+<li><a class="reference internal" href="#module-potator.database">potator.database module</a></li>
+<li><a class="reference internal" href="#module-potator.main">potator.main module</a></li>
+<li><a class="reference internal" href="#module-potator.network_dispatcher">potator.network_dispatcher module</a></li>
+<li><a class="reference internal" href="#module-potator.ourp">potator.ourp module</a></li>
+<li><a class="reference internal" href="#module-potator.ping">potator.ping module</a></li>
+<li><a class="reference internal" href="#module-potator.util">potator.util module</a></li>
+<li><a class="reference internal" href="#module-potator">Module contents</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="user_manual.html"
+                        title="previous chapter">User Manual</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="potator.protocol.html"
+                        title="next chapter">potator.protocol package</a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="_sources/potator.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2015, Mitchel Cabuloy, Richmond Liclican, Kevin Olsson, Justin Pleyto.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.3.1</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.3</a>
+      
+      |
+      <a href="_sources/potator.txt"
+          rel="nofollow">Page source</a></li>
+    </div>
+
+    
+
+    
+  </body>
+</html>

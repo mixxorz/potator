@@ -1,0 +1,282 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>potator.main &mdash; Potator 0.1.0 documentation</title>
+    
+    <link rel="stylesheet" href="../../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../',
+        VERSION:     '0.1.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../_static/doctools.js"></script>
+    <link rel="top" title="Potator 0.1.0 documentation" href="../../index.html" />
+    <link rel="up" title="Module code" href="../index.html" />
+   
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9">
+
+  </head>
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../index.html">Potator 0.1.0 documentation</a> &raquo;</li>
+          <li class="nav-item nav-item-1"><a href="../index.html" accesskey="U">Module code</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for potator.main</h1><div class="highlight"><pre>
+<span class="sd">&quot;&quot;&quot; Potator&#39;s main controller</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="kn">import</span> <span class="nn">argparse</span>
+<span class="kn">import</span> <span class="nn">json</span>
+<span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">import</span> <span class="nn">random</span>
+<span class="kn">import</span> <span class="nn">sys</span>
+
+<span class="kn">import</span> <span class="nn">ipaddr</span>
+<span class="kn">from</span> <span class="nn">impacket</span> <span class="kn">import</span> <span class="n">ImpactDecoder</span>
+<span class="kn">from</span> <span class="nn">twisted.internet</span> <span class="kn">import</span> <span class="n">reactor</span>
+<span class="kn">from</span> <span class="nn">twisted.python</span> <span class="kn">import</span> <span class="n">log</span>
+<span class="kn">from</span> <span class="nn">twisted.web</span> <span class="kn">import</span> <span class="n">server</span>
+
+<span class="kn">from</span> <span class="nn">.api</span> <span class="kn">import</span> <span class="n">PotatorAPI</span>
+<span class="kn">from</span> <span class="nn">.database</span> <span class="kn">import</span> <span class="n">OnionIPMapper</span>
+<span class="kn">from</span> <span class="nn">.network_dispatcher</span> <span class="kn">import</span> <span class="n">NetworkDispatcher</span>
+<span class="kn">from</span> <span class="nn">.ourp</span> <span class="kn">import</span> <span class="n">OnionUrlResolutionProtocol</span>
+<span class="kn">from</span> <span class="nn">.ping</span> <span class="kn">import</span> <span class="n">PingProtocol</span>
+<span class="kn">from</span> <span class="nn">.protocol.potator_pb2</span> <span class="kn">import</span> <span class="n">Spore</span>
+<span class="kn">from</span> <span class="nn">.tor.server</span> <span class="kn">import</span> <span class="n">Server</span>
+<span class="kn">from</span> <span class="nn">.tuntap.tuntap</span> <span class="kn">import</span> <span class="n">TunInterface</span>
+
+
+<div class="viewcode-block" id="Potator"><a class="viewcode-back" href="../../potator.html#potator.main.Potator">[docs]</a><span class="k">class</span> <span class="nc">Potator</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot; The main controller. Coordinates between all the modules.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">args</span><span class="p">):</span>
+        <span class="n">log</span><span class="o">.</span><span class="n">startLogging</span><span class="p">(</span><span class="n">sys</span><span class="o">.</span><span class="n">stdout</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">db</span> <span class="o">=</span> <span class="n">OnionIPMapper</span><span class="p">()</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="s">&#39;C:</span><span class="se">\\</span><span class="s">potator&#39;</span><span class="p">):</span>
+            <span class="n">os</span><span class="o">.</span><span class="n">makedirs</span><span class="p">(</span><span class="s">&#39;C:</span><span class="se">\\</span><span class="s">potator&#39;</span><span class="p">)</span>
+
+        <span class="c"># Store all configuration in this dictionary</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">config</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s">&#39;NETWORK_ID&#39;</span><span class="p">:</span> <span class="n">args</span><span class="o">.</span><span class="n">network_identifier</span><span class="p">,</span>
+            <span class="s">&#39;NETWORK_PASSWORD&#39;</span><span class="p">:</span> <span class="n">args</span><span class="o">.</span><span class="n">password</span><span class="p">,</span>
+            <span class="s">&#39;SOCKS_PORT&#39;</span><span class="p">:</span> <span class="n">random</span><span class="o">.</span><span class="n">randint</span><span class="p">(</span><span class="mi">49152</span><span class="p">,</span> <span class="mi">65535</span><span class="p">),</span>
+            <span class="s">&#39;API_PORT&#39;</span><span class="p">:</span> <span class="n">random</span><span class="o">.</span><span class="n">randint</span><span class="p">(</span><span class="mi">49152</span><span class="p">,</span> <span class="mi">65535</span><span class="p">),</span>
+            <span class="s">&#39;CONTROL_PORT&#39;</span><span class="p">:</span> <span class="n">random</span><span class="o">.</span><span class="n">randint</span><span class="p">(</span><span class="mi">49152</span><span class="p">,</span> <span class="mi">65535</span><span class="p">),</span>
+            <span class="s">&#39;HIDDEN_SERVICE_PORT&#39;</span><span class="p">:</span> <span class="mi">7701</span>
+        <span class="p">}</span>
+
+        <span class="c"># Save config</span>
+        <span class="k">if</span> <span class="n">args</span><span class="o">.</span><span class="n">new</span><span class="p">:</span>
+            <span class="n">config_path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span>
+                <span class="s">&#39;C:</span><span class="se">\\</span><span class="s">potator&#39;</span><span class="p">,</span> <span class="n">args</span><span class="o">.</span><span class="n">network_identifier</span><span class="p">)</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">config_path</span><span class="p">):</span>
+                <span class="n">os</span><span class="o">.</span><span class="n">makedirs</span><span class="p">(</span><span class="n">config_path</span><span class="p">)</span>
+            <span class="n">config_file</span> <span class="o">=</span> <span class="nb">open</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">config_path</span><span class="p">,</span> <span class="s">&#39;config.json&#39;</span><span class="p">),</span> <span class="s">&#39;w+&#39;</span><span class="p">)</span>
+            <span class="n">configuration</span> <span class="o">=</span> <span class="p">{</span>
+                <span class="s">&#39;network_identifier&#39;</span><span class="p">:</span> <span class="n">args</span><span class="o">.</span><span class="n">network_identifier</span><span class="p">,</span>
+                <span class="s">&#39;ip_network&#39;</span><span class="p">:</span> <span class="n">args</span><span class="o">.</span><span class="n">ip_network</span>
+            <span class="p">}</span>
+            <span class="k">if</span> <span class="n">args</span><span class="o">.</span><span class="n">password</span><span class="p">:</span>
+                <span class="n">configuration</span><span class="p">[</span><span class="s">&#39;password&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">args</span><span class="o">.</span><span class="n">password</span>
+
+            <span class="n">config_file</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">configuration</span><span class="p">,</span> <span class="n">indent</span><span class="o">=</span><span class="mi">2</span><span class="p">))</span>
+            <span class="n">ip</span> <span class="o">=</span> <span class="n">ipaddr</span><span class="o">.</span><span class="n">IPv4Network</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">ip_network</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="p">[</span><span class="s">&#39;IP_ADDRESS&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">ip</span><span class="o">.</span><span class="n">ip</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="p">[</span><span class="s">&#39;IP_NETWORK&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">args</span><span class="o">.</span><span class="n">ip_network</span>
+            <span class="n">config_file</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+            <span class="n">log</span><span class="o">.</span><span class="n">msg</span><span class="p">(</span><span class="s">&#39;Network </span><span class="si">%s</span><span class="s"> created.&#39;</span> <span class="o">%</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="p">[</span><span class="s">&#39;NETWORK_ID&#39;</span><span class="p">])</span>
+            <span class="n">log</span><span class="o">.</span><span class="n">msg</span><span class="p">(</span><span class="s">&#39;You can now use this network by running `python cli.py </span><span class="si">%s</span><span class="s">`&#39;</span> <span class="o">%</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="p">[</span><span class="s">&#39;NETWORK_ID&#39;</span><span class="p">])</span>
+            <span class="n">sys</span><span class="o">.</span><span class="n">exit</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+
+        <span class="c"># Load config if new flag is not set</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">config_file</span> <span class="o">=</span> <span class="nb">open</span><span class="p">(</span>
+                <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="s">&#39;C:</span><span class="se">\\</span><span class="s">potator&#39;</span><span class="p">,</span> <span class="n">args</span><span class="o">.</span><span class="n">network_identifier</span><span class="p">,</span> <span class="s">&#39;config.json&#39;</span><span class="p">))</span>
+            <span class="n">configuration</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">config_file</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="p">[</span><span class="s">&#39;IP_NETWORK&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">configuration</span><span class="p">[</span><span class="s">&#39;ip_network&#39;</span><span class="p">]</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="p">[</span><span class="s">&#39;IP_ADDRESS&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span>
+                <span class="n">ipaddr</span><span class="o">.</span><span class="n">IPv4Network</span><span class="p">(</span><span class="n">configuration</span><span class="p">[</span><span class="s">&#39;ip_network&#39;</span><span class="p">])</span><span class="o">.</span><span class="n">ip</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="p">[</span><span class="s">&#39;NETWORK_ID&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">configuration</span><span class="p">[</span><span class="s">&#39;network_identifier&#39;</span><span class="p">]</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="p">[</span><span class="s">&#39;NETWORK_PASSWORD&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">configuration</span><span class="o">.</span><span class="n">get</span><span class="p">(</span>
+                <span class="s">&#39;password&#39;</span><span class="p">,</span> <span class="bp">None</span><span class="p">)</span>
+
+            <span class="n">config_file</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">ourp</span> <span class="o">=</span> <span class="n">OnionUrlResolutionProtocol</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">network_dispatcher</span> <span class="o">=</span> <span class="n">NetworkDispatcher</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ping</span> <span class="o">=</span> <span class="n">PingProtocol</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">server</span> <span class="o">=</span> <span class="n">Server</span><span class="p">(</span><span class="n">reactor</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">interface</span> <span class="o">=</span> <span class="n">TunInterface</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+        <span class="c"># self.stats = StatPrinter(server, interface)</span>
+
+        <span class="n">reactor</span><span class="o">.</span><span class="n">listenTCP</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="p">[</span><span class="s">&#39;API_PORT&#39;</span><span class="p">],</span>
+                          <span class="n">server</span><span class="o">.</span><span class="n">Site</span><span class="p">(</span><span class="n">PotatorAPI</span><span class="p">(</span><span class="bp">self</span><span class="p">)))</span>
+
+<div class="viewcode-block" id="Potator.start"><a class="viewcode-back" href="../../potator.html#potator.main.Potator.start">[docs]</a>    <span class="k">def</span> <span class="nf">start</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Starts Potator</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c"># self.interface.start()</span>
+        <span class="c"># self.stats.start()</span>
+        <span class="n">reactor</span><span class="o">.</span><span class="n">run</span><span class="p">()</span>
+</div>
+<div class="viewcode-block" id="Potator.stop"><a class="viewcode-back" href="../../potator.html#potator.main.Potator.stop">[docs]</a>    <span class="k">def</span> <span class="nf">stop</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Stops Potator, initiates cleanup</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">interface</span><span class="o">.</span><span class="n">stop</span><span class="p">()</span>
+        <span class="c"># self.stats.stop()</span>
+        <span class="c"># reactor.stop()</span>
+</div>
+<div class="viewcode-block" id="Potator.incomingCallback"><a class="viewcode-back" href="../../potator.html#potator.main.Potator.incomingCallback">[docs]</a>    <span class="k">def</span> <span class="nf">incomingCallback</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">spore_string</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Callback when a spore is received from a remote node</span>
+
+<span class="sd">        :param str spore_string: The spore encoded string</span>
+
+<span class="sd">        The :code:`spore` is decoded from the :code:`spore_string` using \</span>
+<span class="sd">        protobuf. :code:`spore` is then passed into \</span>
+<span class="sd">        :func:`potator.network_dispatcher.NetworkDispatcher.handleDispatch`.</span>
+
+<span class="sd">        Depending on whether the spore contains IP or OURP data, it will then \</span>
+<span class="sd">        be passed into the OURP module or Tuntap module.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">spore</span> <span class="o">=</span> <span class="n">Spore</span><span class="p">()</span>
+        <span class="n">spore</span><span class="o">.</span><span class="n">ParseFromString</span><span class="p">(</span><span class="n">spore_string</span><span class="p">)</span>
+        <span class="n">spore</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">network_dispatcher</span><span class="o">.</span><span class="n">handleDispatch</span><span class="p">(</span><span class="n">spore</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">spore</span><span class="p">:</span>
+            <span class="c"># Packet Handler</span>
+            <span class="k">if</span> <span class="n">spore</span><span class="o">.</span><span class="n">dataType</span> <span class="o">==</span> <span class="n">spore</span><span class="o">.</span><span class="n">OURP</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">ourp</span><span class="o">.</span><span class="n">processOurp</span><span class="p">(</span><span class="n">spore</span><span class="o">.</span><span class="n">ourpData</span><span class="p">)</span>
+            <span class="k">elif</span> <span class="n">spore</span><span class="o">.</span><span class="n">dataType</span> <span class="o">==</span> <span class="n">spore</span><span class="o">.</span><span class="n">IP</span><span class="p">:</span>
+                <span class="n">decoder</span> <span class="o">=</span> <span class="n">ImpactDecoder</span><span class="o">.</span><span class="n">IPDecoder</span><span class="p">()</span>
+                <span class="n">packet</span> <span class="o">=</span> <span class="n">decoder</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="n">spore</span><span class="o">.</span><span class="n">ipData</span><span class="o">.</span><span class="n">data</span><span class="p">)</span>
+                <span class="c"># Append to local interface buffer</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">interface</span><span class="o">.</span><span class="n">writeBuffer</span><span class="o">.</span><span class="n">put</span><span class="p">(</span><span class="n">packet</span><span class="p">)</span>
+            <span class="k">elif</span> <span class="n">spore</span><span class="o">.</span><span class="n">dataType</span> <span class="o">==</span> <span class="n">spore</span><span class="o">.</span><span class="n">PING</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">ping</span><span class="o">.</span><span class="n">processPing</span><span class="p">(</span><span class="n">spore</span><span class="o">.</span><span class="n">ping</span><span class="p">)</span>
+</div>
+<div class="viewcode-block" id="Potator.outgoingCallback"><a class="viewcode-back" href="../../potator.html#potator.main.Potator.outgoingCallback">[docs]</a>    <span class="k">def</span> <span class="nf">outgoingCallback</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">packet</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Callback when an outgoing IP packet is received from Tuntap</span>
+
+<span class="sd">        :param packet: The IP packet</span>
+
+<span class="sd">        The packet is loaded into a Spore object and encoded into a string \</span>
+<span class="sd">        using protobuf. The destination onion URL is acquired from \</span>
+<span class="sd">        :func:`potator.database.OnionIPMapper.getOnionUrl`. If the destination \</span>
+<span class="sd">        onion URL is not found for the IP address, an OURP request is sent by \</span>
+<span class="sd">        calling :func:`potator.ourp.OnionUrlResolutionProtocol.sendRequest`. \</span>
+<span class="sd">        If the destination is found, the spore encoded string is sent to its \</span>
+<span class="sd">        destination by calling :func:`potator.tor.server.Server.sendSpore`.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">interface</span><span class="o">.</span><span class="n">sent_bytes</span> <span class="o">+=</span> <span class="n">packet</span><span class="o">.</span><span class="n">get_size</span><span class="p">()</span>
+
+        <span class="n">spore</span> <span class="o">=</span> <span class="n">Spore</span><span class="p">()</span>
+        <span class="n">spore</span><span class="o">.</span><span class="n">dataType</span> <span class="o">=</span> <span class="n">spore</span><span class="o">.</span><span class="n">IP</span>
+        <span class="n">spore</span><span class="o">.</span><span class="n">castType</span> <span class="o">=</span> <span class="n">spore</span><span class="o">.</span><span class="n">UNICAST</span>
+        <span class="n">spore</span><span class="o">.</span><span class="n">ipData</span><span class="o">.</span><span class="n">destinationAddress</span> <span class="o">=</span> <span class="n">packet</span><span class="o">.</span><span class="n">get_ip_dst</span><span class="p">()</span>
+        <span class="n">spore</span><span class="o">.</span><span class="n">ipData</span><span class="o">.</span><span class="n">data</span> <span class="o">=</span> <span class="n">packet</span><span class="o">.</span><span class="n">get_packet</span><span class="p">()</span>
+
+        <span class="n">destination_onion_url</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">getOnionUrl</span><span class="p">(</span><span class="n">packet</span><span class="o">.</span><span class="n">get_ip_dst</span><span class="p">())</span>
+
+        <span class="k">if</span> <span class="n">destination_onion_url</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">server</span><span class="o">.</span><span class="n">sendSpore</span><span class="p">(</span>
+                <span class="n">destination_onion_url</span><span class="p">,</span> <span class="n">spore</span><span class="o">.</span><span class="n">SerializeToString</span><span class="p">())</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">ourp</span><span class="o">.</span><span class="n">sendRequest</span><span class="p">(</span><span class="n">packet</span><span class="o">.</span><span class="n">get_ip_dst</span><span class="p">())</span>
+
+</div></div>
+<div class="viewcode-block" id="main"><a class="viewcode-back" href="../../potator.html#potator.main.main">[docs]</a><span class="k">def</span> <span class="nf">main</span><span class="p">():</span>
+    <span class="sd">&quot;&quot;&quot; The main method. Passes arguments, creates an instance of \</span>
+<span class="sd">    :class:`.Potator`.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">parser</span> <span class="o">=</span> <span class="n">argparse</span><span class="o">.</span><span class="n">ArgumentParser</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s">&#39;Potator v0.1&#39;</span><span class="p">)</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span>
+        <span class="s">&#39;network_identifier&#39;</span><span class="p">,</span>
+        <span class="n">help</span><span class="o">=</span><span class="s">&#39;A name for this Potator network.&#39;</span><span class="p">)</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span>
+        <span class="s">&#39;ip_network&#39;</span><span class="p">,</span>
+        <span class="n">nargs</span><span class="o">=</span><span class="s">&#39;?&#39;</span><span class="p">,</span>
+        <span class="n">help</span><span class="o">=</span><span class="s">&#39;An IP address in CIDR notation (e.g. 4.4.4.1/8) to be used. e.g. 4.4.4.1/8 for 4.4.4.1 255.0.0.0.&#39;</span><span class="p">)</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span>
+        <span class="s">&#39;-p&#39;</span><span class="p">,</span> <span class="s">&#39;--password&#39;</span><span class="p">,</span> <span class="n">nargs</span><span class="o">=</span><span class="s">&#39;?&#39;</span><span class="p">,</span> <span class="n">const</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span>
+        <span class="n">help</span><span class="o">=</span><span class="s">&#39;Password for this network.&#39;</span><span class="p">)</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span>
+        <span class="s">&#39;-n&#39;</span><span class="p">,</span> <span class="s">&#39;--new&#39;</span><span class="p">,</span> <span class="n">action</span><span class="o">=</span><span class="s">&#39;store_true&#39;</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s">&#39;Saves this network.&#39;</span><span class="p">)</span>
+
+    <span class="n">app</span> <span class="o">=</span> <span class="n">Potator</span><span class="p">(</span><span class="n">parser</span><span class="o">.</span><span class="n">parse_args</span><span class="p">())</span>
+
+    <span class="n">reactor</span><span class="o">.</span><span class="n">addSystemEventTrigger</span><span class="p">(</span><span class="s">&#39;before&#39;</span><span class="p">,</span> <span class="s">&#39;shutdown&#39;</span><span class="p">,</span> <span class="n">app</span><span class="o">.</span><span class="n">stop</span><span class="p">)</span>
+    <span class="n">app</span><span class="o">.</span><span class="n">start</span><span class="p">()</span>
+</div>
+<span class="k">if</span> <span class="n">__name__</span> <span class="o">==</span> <span class="s">&#39;__main__&#39;</span><span class="p">:</span>
+    <span class="n">sys</span><span class="o">.</span><span class="n">exit</span><span class="p">(</span><span class="n">main</span><span class="p">())</span>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2015, Mitchel Cabuloy, Richmond Liclican, Kevin Olsson, Justin Pleyto.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.3.1</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.3</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>

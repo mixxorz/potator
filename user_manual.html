@@ -1,0 +1,333 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>User Manual &mdash; Potator 0.1.0 documentation</title>
+    
+    <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '0.1.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="Potator 0.1.0 documentation" href="index.html" />
+    <link rel="next" title="potator package" href="potator.html" />
+    <link rel="prev" title="Welcome to Potator’s documentation!" href="index.html" />
+   
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9">
+
+  </head>
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="potator.html" title="potator package"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="index.html" title="Welcome to Potator’s documentation!"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">Potator 0.1.0 documentation</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="user-manual">
+<h1>User Manual<a class="headerlink" href="#user-manual" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="system-overview">
+<h2>System Overview<a class="headerlink" href="#system-overview" title="Permalink to this headline">¶</a></h2>
+<p>The Potator application allows users to communicate peer-to-peer, similar to a switched network, over the Tor network. It is the bridge between the Tor network and the regular IP network. Potator will open a Virtual Network Interface Card to interface with applications running under Windows, while also creating an instance of Tor for which to send packets through. Any packet that is bound for another client in the Potator Network would pass through the Virtual NIC, the Potator application, and then the Tor application which would route the packet through the Tor network. Said packet would enter the destination machine in a similar fashion it left the source machine.</p>
+<p>Peer to peer communication is not inherently supported by Tor. Potator will accomplish peer to peer connectivity by using the Hidden Service feature of Tor. Each Potator node, a computer connected to a Potator network, will have an onion URL, thus allowing two way connectivity between nodes. Commands called Onion URL Resolution Protocol (OURP) commands are sent between nodes in the Potator network to facilitate network discovery and node connectivity. All packets traversing the Potator network are encapsulated in Spores, data containers Potator uses for communication.</p>
+</div>
+<div class="section" id="system-requirements">
+<h2>System Requirements<a class="headerlink" href="#system-requirements" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="minimum-requirements">
+<h3>Minimum Requirements<a class="headerlink" href="#minimum-requirements" title="Permalink to this headline">¶</a></h3>
+<table border="1" class="docutils">
+<colgroup>
+<col width="27%" />
+<col width="73%" />
+</colgroup>
+<tbody valign="top">
+<tr class="row-odd"><td>Processor</td>
+<td>1 GHz or faster 32-bit (x86) or 64-bit(x64) processor.</td>
+</tr>
+<tr class="row-even"><td>Operating System</td>
+<td>Windows 7 or a more recent Windows OS</td>
+</tr>
+<tr class="row-odd"><td>Memory</td>
+<td>1 GB RAM (32-bit) or 2GB RAM (64-bit)</td>
+</tr>
+<tr class="row-even"><td>Hard Disk space</td>
+<td>100MB available disk space</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="section" id="other-requirements">
+<h3>Other Requirements<a class="headerlink" href="#other-requirements" title="Permalink to this headline">¶</a></h3>
+<table border="1" class="docutils">
+<colgroup>
+<col width="27%" />
+<col width="73%" />
+</colgroup>
+<tbody valign="top">
+<tr class="row-odd"><td>Tor Expert Bundle</td>
+<td><a class="reference external" href="https://www.torproject.org/dist/torbrowser/4.0.6/tor-win32-tor-0.2.5.11.zip">https://www.torproject.org/dist/torbrowser/4.0.6/tor-win32-tor-0.2.5.11.zip</a></td>
+</tr>
+<tr class="row-even"><td>Tap Windows</td>
+<td><a class="reference external" href="https://swupdate.openvpn.org/community/releases/tap-windows-9.9.2_3.exe">https://swupdate.openvpn.org/community/releases/tap-windows-9.9.2_3.exe</a></td>
+</tr>
+<tr class="row-odd"><td>Node.js</td>
+<td><a class="reference external" href="https://nodejs.org/download/">https://nodejs.org/download/</a></td>
+</tr>
+<tr class="row-even"><td>Potator using</td>
+<td>Instructions found in getting started section</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<div class="section" id="getting-started">
+<h2>Getting Started<a class="headerlink" href="#getting-started" title="Permalink to this headline">¶</a></h2>
+<p>Installing Potator is as simple as extracting the 32-bit (x86) or the 64-bit (x64) version to the root of your hard drive (normally C:) and then adding the said directory to your <code class="code docutils literal"><span class="pre">PATH</span></code> environment variable. At this point, Potator is now usable through the command line. This manual however, does not cover how to use Potator through the command line, but instead covers setting up and using Potator with Potator UI, a user interface created for Potator.
+Make sure that you have all the other dependencies listed under ‘Other Requirements’ before proceeding to install Potator UI. The following instructions are done using a command line, inside the Potator UI folder provided along with the installation files.</p>
+<div class="section" id="installing-potator-ui">
+<h3>Installing Potator UI<a class="headerlink" href="#installing-potator-ui" title="Permalink to this headline">¶</a></h3>
+<table border="1" class="docutils">
+<colgroup>
+<col width="27%" />
+<col width="73%" />
+</colgroup>
+<tbody valign="top">
+<tr class="row-odd"><td>Install Bower and Grunt</td>
+<td><div class="first last line-block">
+<div class="line">npm install -g bower</div>
+<div class="line">npm install -g grunt</div>
+<div class="line">npm install -g grunt-cli</div>
+</div>
+</td>
+</tr>
+<tr class="row-even"><td>Install Potator UI and build
+its dependencies</td>
+<td><div class="first last line-block">
+<div class="line">cd /build</div>
+<div class="line">npm install</div>
+</div>
+</td>
+</tr>
+<tr class="row-odd"><td>Install Potator UI app
+dependencies</td>
+<td><div class="first last line-block">
+<div class="line">cd ../potatorui-app</div>
+<div class="line">bower install</div>
+<div class="line">npm install</div>
+</div>
+</td>
+</tr>
+<tr class="row-even"><td>Run grunt once to compile
+Jade and Sass files</td>
+<td><div class="first last line-block">
+<div class="line">grunt</div>
+</div>
+</td>
+</tr>
+<tr class="row-odd"><td>Download atom-shell</td>
+<td><div class="first last line-block">
+<div class="line">cd ../build</div>
+<div class="line">grunt download-atom-shell</div>
+</div>
+</td>
+</tr>
+<tr class="row-even"><td>Build and luanch Potator UI</td>
+<td>./build/atom-shell/atom.exe ./potatorui-app/</td>
+</tr>
+</tbody>
+</table>
+<p>At this point, if everything was performed correctly, Potator UI will have launched and you are now ready to use Potator! Note: When running the Potator UI again, only the last step needs to be done.</p>
+</div>
+</div>
+<div class="section" id="using-potator">
+<h2>Using Potator<a class="headerlink" href="#using-potator" title="Permalink to this headline">¶</a></h2>
+<p>As mentioned in getting started, the manual covers using Potator through Potator UI. Below are screen by screen instructions on using the Potator UI. Upon launching Potator, you are greeting with this screen</p>
+<img alt="_images/Picture1.png" src="_images/Picture1.png" />
+<p>If it is your first time launching Potator and Potator UI, this screen is empty as you do not have any existing networks.</p>
+<div class="section" id="creating-a-network">
+<h3>Creating a Network<a class="headerlink" href="#creating-a-network" title="Permalink to this headline">¶</a></h3>
+<img alt="_images/Picture2.png" src="_images/Picture2.png" />
+<p>To create a network, click on the + sign found on the upper right hand screen. It would lead you to the ‘Add new network’ section as seen on the screen.</p>
+<table border="1" class="docutils">
+<colgroup>
+<col width="27%" />
+<col width="73%" />
+</colgroup>
+<tbody valign="top">
+<tr class="row-odd"><td>Network Name</td>
+<td><div class="first last line-block">
+<div class="line">Local identifier for your network. This is stored locally.
+People looking to connect to you does not need to have the same network name.</div>
+<div class="line"><br /></div>
+<div class="line">Using a network name that already exists overwrites the old network with
+sade name.</div>
+</div>
+</td>
+</tr>
+<tr class="row-even"><td>Password</td>
+<td><div class="first last line-block">
+<div class="line">Optional field. Leave empty if you do not want to require a password when
+connecting to the network you are creating.</div>
+</div>
+</td>
+</tr>
+<tr class="row-odd"><td>IP Address</td>
+<td><div class="first last line-block">
+<div class="line">Your IP address in the network. Potator does not have any DHCP capabilities.
+Please determine the IP addresses you will use outside Potator.</div>
+<div class="line"><br /></div>
+<div class="line">If you do not know what to put, default to the value ’10.10.10.1’, and then have
+other users utilize the following addresses after.
+(e.g.: 10.10.10.2, 10.10.10.3, and so on)</div>
+</div>
+</td>
+</tr>
+<tr class="row-even"><td>Subnet Mask</td>
+<td><div class="first last line-block">
+<div class="line">Subnet mask of the network. If you do not know what to put,
+default to the value ‘255.255.255.0</div>
+</div>
+</td>
+</tr>
+</tbody>
+</table>
+<p>Note that upon creating a network, you would still have to connect to it!</p>
+</div>
+<div class="section" id="joining-a-network">
+<h3>Joining a Network<a class="headerlink" href="#joining-a-network" title="Permalink to this headline">¶</a></h3>
+<img alt="_images/Picture3.png" src="_images/Picture3.png" />
+<p>If you are connecting to your own network, leave this field blank. If you are connecting to another network, you would need to enter the onion URL of any user connected to that network.</p>
+<img alt="_images/Picture4.png" src="_images/Picture4.png" />
+<p>To determine the Onion URL, ask anyone who is connected to the network you are connecting to click the network name, and provide you with any Onion URL listed as seen on the screen just shown.</p>
+</div>
+</div>
+<div class="section" id="troubleshooting">
+<h2>Troubleshooting<a class="headerlink" href="#troubleshooting" title="Permalink to this headline">¶</a></h2>
+<p>Potator and Potator UI are at its early stages, and while there is an accompanying command line behind the UI to provide error messages, none of them are descriptive at this point. If you are able to use Potator, and encounter a problem, feel free to post an issue in their respective GitHub repositories listed below.</p>
+<table border="1" class="docutils">
+<colgroup>
+<col width="27%" />
+<col width="73%" />
+</colgroup>
+<tbody valign="top">
+<tr class="row-odd"><td>Potator</td>
+<td><a class="reference external" href="https://github.com/mixxorz/Potator/issues">https://github.com/mixxorz/Potator/issues</a></td>
+</tr>
+<tr class="row-even"><td>Potator-UI</td>
+<td><a class="reference external" href="https://github.com/monliclican/potatorui-atom/issues">https://github.com/monliclican/potatorui-atom/issues</a></td>
+</tr>
+</tbody>
+</table>
+<p><em>At this point in writing, it’s worth taking note that these repositories are set to private. You would have to contact the authors</em>
+<em>of the respective repositories to start contributing</em>.</p>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">User Manual</a><ul>
+<li><a class="reference internal" href="#system-overview">System Overview</a></li>
+<li><a class="reference internal" href="#system-requirements">System Requirements</a><ul>
+<li><a class="reference internal" href="#minimum-requirements">Minimum Requirements</a></li>
+<li><a class="reference internal" href="#other-requirements">Other Requirements</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#getting-started">Getting Started</a><ul>
+<li><a class="reference internal" href="#installing-potator-ui">Installing Potator UI</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#using-potator">Using Potator</a><ul>
+<li><a class="reference internal" href="#creating-a-network">Creating a Network</a></li>
+<li><a class="reference internal" href="#joining-a-network">Joining a Network</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#troubleshooting">Troubleshooting</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="index.html"
+                        title="previous chapter">Welcome to Potator&#8217;s documentation!</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="potator.html"
+                        title="next chapter">potator package</a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="_sources/user_manual.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2015, Mitchel Cabuloy, Richmond Liclican, Kevin Olsson, Justin Pleyto.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.3.1</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.3</a>
+      
+      |
+      <a href="_sources/user_manual.txt"
+          rel="nofollow">Page source</a></li>
+    </div>
+
+    
+
+    
+  </body>
+</html>
