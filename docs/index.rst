@@ -11,7 +11,9 @@ Contents:
 .. toctree::
    :maxdepth: 2
 
-
+   user_manual
+   technical_manual
+   potator
 
 Indices and tables
 ==================

@@ -160,8 +160,7 @@ def get_available_tuntap_interface():
 class ReadThread(threading.Thread):
 
     # TODO: Change text
-    '''
-    \brief Thread which continously reads input from a TUN interface.
+    ''' Thread which continously reads input from a TUN interface.
 
     If that input is an IPv4 echo request (a "ping" command) issued to
     any IP address in the virtual network behind the TUN interface, this thread
@@ -228,8 +227,7 @@ class ReadThread(threading.Thread):
 
 class WriteThread(threading.Thread):
 
-    '''
-    \brief Thread with periodically sends IPv4 and IPv6 echo requests.
+    ''' Thread with periodically sends IPv4 and IPv6 echo requests.
     '''
 
     def __init__(self, interface):
