@@ -1,3 +1,6 @@
+""" Network Dispatcher module
+"""
+
 from twisted.internet import reactor
 from twisted.python import log
 
@@ -5,6 +8,9 @@ from .protocol.potator_pb2 import Spore
 
 
 class NetworkDispatcher(object):
+
+    """ Network Dispatcher controller. Handles Spore broadcasts.
+    """
 
     def __init__(self, potator):
         self.potator = potator
@@ -28,10 +34,11 @@ class NetworkDispatcher(object):
             self.potator.server.sendSpore(node, data)
 
     def handleDispatch(self, spore):
-        ''' handles dispatching of broadcast spores
+        """ Handles dispatching of broadcast spores
 
-        returns the spore object. If returns none, it means the packet should be dropped
-        '''
+        :return: The spore object. If returns none, it means the packet should \
+        be dropped.
+        """
         if spore.castType == Spore.BROADCAST and spore.dataType == Spore.OURP:
             if not spore.hash in self.hash_cache:
                 # TODO: Group ID should not just be '1'
