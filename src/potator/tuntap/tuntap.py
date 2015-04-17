@@ -1,3 +1,7 @@
+""" Non-asynchronous module that deals with tuntap communications
+
+Black magic. Do not touch.
+"""
 import _winreg as reg
 import threading
 from Queue import Queue
@@ -14,6 +18,8 @@ from twisted.internet import defer, task, threads, reactor
 
 
 class TunInterface(object):
+    """ Manages incoming and outgoing tuntap data
+    """
 
     def __init__(self, potator):
         self.potator = potator
@@ -32,6 +38,8 @@ class TunInterface(object):
         self._runner_loop.start(5.0)
 
     def stop(self):
+        """ Stops the tuntap threads and closes the handler
+        """
         try:
             self.readThread.close()
             self.writeThread.close()
